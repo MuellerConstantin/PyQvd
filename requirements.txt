@@ -1,2 +1,4 @@
+build
+twine
 pytest
 pylint

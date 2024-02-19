@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../pyqvd')
-
 import os
 import time
 import pytest
