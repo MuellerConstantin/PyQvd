@@ -1,7 +1,7 @@
 import os
 import time
 import pytest
-from pyqvd.qvd import QvdFile
+from pyqvd import QvdFile
 
 def test_parse_well_formed_qvd_file():
     file = QvdFile.load(os.path.join(os.path.dirname(__file__), 'data/small.qvd'))
