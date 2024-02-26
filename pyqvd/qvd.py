@@ -523,9 +523,15 @@ class QvdFileWriter:
 
         header_element = doc.createElement('QvdTableHeader')
 
-        qv_build_number_element = doc.createElement('QvBuildNumber')
-        qv_build_number_element.appendChild(doc.createTextNode('50667'))
-        header_element.appendChild(qv_build_number_element)
+        """
+        The following fields before the field definitions are undocumented and Qlik Sense specific. These fields
+        seems to be not technically necessary for parsing a QVD file, but are mandatory for Qlik Sense to recognize
+        the QVD file as a valid QVD file. Hence, some of these fields are hardcoded and some are generated randomly.
+        """
+
+        qv_build_no_element = doc.createElement('QvBuildNo')
+        qv_build_no_element.appendChild(doc.createTextNode('50667'))
+        header_element.appendChild(qv_build_no_element)
 
         creator_doc_element = doc.createElement('CreatorDoc')
         creator_doc_element.appendChild(doc.createTextNode(str(uuid.uuid4())))
@@ -719,15 +725,60 @@ class QvdFileWriter:
         self._index_table_metadata = [None] * len(self._df.columns)
         self._index_buffer = b''
 
+        """
+        Each row in the index table is represented by one or more bytes, the number of bytes used to represent a row is
+        the so called record byte size. These bytes are used to store the indices of the symbols in the symbol table for
+        each row. Therefore, the value indices of a row are concatenated in a binary representation in the order of the
+        columns of the data frame.
+
+        Let's assume the flowing data frame and the corresponding symbol table:
+
+        Data Frame:
+        | A | B | C |
+        |---|---|---|
+        | 1 | 4 | 7 |
+        | 2 | 4 | 8 |
+        | 2 | 6 | 9 |
+        | 3 | 6 | 7 |
+
+        Header:
+        | FieldName | BitOffset | BitWidth |
+        |-----------|-----------|----------|
+        | A         | 0         | 2        |
+        | B         | 2         | 1        |
+        | C         | 3         | 2        |
+
+        Symbol Table:
+        A: [1, 2, 3]
+        B: [4, 6]
+        C: [7, 8, 9]
+
+        The third row of the data frame for example is represented by the indices [1, 1, 2] in the symbol table. These indices
+        are then converted to a binary representation and are padded with zeros to match the length of the largest index of
+        each column, the bit width. In this case, the largest index for 'A' is 2, for 'B' is 1, and for 'C' is 2. Hence, all
+        indices in 'A' and 'C' can be represented by 2 bits, and all indices in 'B' can be represented by 1 bit. In binary
+        representation, the padded indices are [01, 1, 10]. These indices are then concatenated to a single binary string.
+        The offset of the first bit of each column's index within the byte is stored in the header. In this case, the bit
+        offset of 'A' is 0, the bit offset of 'B' is 2, and the bit offset of 'C' is 3. After the indices are concatenated
+        to a binary string, the binary string itself is padded with zeros to match whole bytes. The binary string for the
+        third row is therefore [01110000], which fits into one byte, the record byte size is 1 byte.
+
+        This process is repeated for each row of the data frame, and the resulting bytes are concatenated to the so called
+        index table, basically a byte buffer. The information about the bit width and bit offset of each column is stored
+        in the header.
+        """
+
         for row_index, row in enumerate(self._df.data):
             indices = [None] * len(self._df.columns)
 
+            # Convert the raw values to indices referring to the symbol table
             for column_index, column_name in enumerate(self._df.columns):
                 value = row[column_index]
                 symbol = self._convert_raw_to_symbol(value)
                 symbol_index = self._symbol_table[column_index].index(symbol)
                 indices[column_index] = symbol_index
 
+            # Convert the integer indices to binary representation
             for index_index, index in enumerate(indices):
                 bits = self._convert_int32_to_bits(index, 8)
                 bits = ''.join([str(bit) for bit in bits])
@@ -736,15 +787,20 @@ class QvdFileWriter:
 
             self._index_table[row_index] = indices
         
+        # Normalize the bit representation of the indices by padding with zeros
         for column_index, column_name in enumerate(self._df.columns):
+            # Bit offset is the sum of the bit widths of all previous columns
             bit_offset = sum([self._index_table_metadata[index][1] for index in range(column_index) if self._index_table_metadata[index] is not None])
+            # Bit width is the maximum bit width of all indices of the column
             bit_width = max([len(bit_indices[column_index]) for bit_indices in self._index_table])
             bias = 0
             self._index_table_metadata[column_index] = (bit_offset, bit_width, bias)
 
+            # Pad the bit representation of the indices with zeros to match the bit width
             for bit_indices in self._index_table:
                 bit_indices[column_index] = bit_indices[column_index].rjust(bit_width, '0')
         
+        # Concatenate the bit representation of the indices of each row to a single binary string per row
         for bit_indices in self._index_table:
             bits = ''.join(bit_indices)
             padded_bits = '0' * (8 - len(bits) % 8) + bits
