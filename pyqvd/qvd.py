@@ -141,8 +141,16 @@ class QvdFile:
         """
         if index >= self.number_of_rows:
             raise ValueError('Index is out of bounds')
+        
+        row = [None] * len(self._symbol_table)
 
-        return [self._symbol_table[field_index][symbol_index].to_primary_value() for field_index, symbol_index in enumerate(self._index_table[index])]
+        for field_index, symbol_index in enumerate(self._index_table[index]):
+            if symbol_index < 0:
+                row[field_index] = None
+            else:
+                row[field_index] = self._symbol_table[field_index][symbol_index].to_primary_value()
+
+        return row
 
     def get_table(self) -> dict[str, any]:
         """
