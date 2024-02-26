@@ -24,6 +24,7 @@ structure.
     - [`rows(*args: int) -> QvdDataFrame`](#rowsargs-int---qvddataframe)
     - [`at(row: int, column: str) -> any`](#atrow-int-column-str---any)
     - [`to_dict() -> dict[str, list[any]]`](#to_dict---dictstr-listany)
+    - [`to_qvd(path: str) -> None`](#to_qvdpath-str---none)
 - [License](#license)
   - [Forbidden](#forbidden)
 
@@ -134,6 +135,10 @@ The method `at` returns the value at the specified row and column.
 #### `to_dict() -> dict[str, list[any]]`
 
 The method `to_dict` returns the data frame as a dictionary. The dictionary contains the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
+
+#### `to_qvd(path: str) -> None`
+
+The method `to_qvd` writes the data frame to a QVD file at the specified path.
 
 ## License
 

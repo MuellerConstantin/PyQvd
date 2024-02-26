@@ -3,7 +3,7 @@ import time
 import pytest
 from pyqvd import QvdDataFrame
 
-def test_parse_qvd_file_with_1000_rows():
+def test_read_qvd_file_with_1000_rows():
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/small.qvd'))
     end = int(time.time() * 1000)
@@ -19,7 +19,7 @@ def test_parse_qvd_file_with_1000_rows():
     assert len(df.data) == 606
     assert df.head(5).shape == (5, 8)
 
-def test_parse_qvd_file_with_20000_rows():
+def test_read_qvd_file_with_20000_rows():
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/medium.qvd'))
     end = int(time.time() * 1000)
@@ -35,7 +35,7 @@ def test_parse_qvd_file_with_20000_rows():
     assert len(df.data) == 18484
     assert df.head(5).shape == (5, 13)
 
-def test_parse_qvd_file_with_60000_rows():
+def test_read_qvd_file_with_60000_rows():
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/large.qvd'))
     end = int(time.time() * 1000)
@@ -51,6 +51,6 @@ def test_parse_qvd_file_with_60000_rows():
     assert len(df.data) == 60398
     assert df.head(5).shape == (5, 11)
 
-def test_parse_damaged_qvd_file():
+def test_read_damaged_qvd_file():
     with pytest.raises(Exception):
         QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/damaged.qvd'))

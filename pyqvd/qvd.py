@@ -2,8 +2,12 @@
 Contains classes for parsing and representing QVD files.
 """
 
+import uuid
+import time
+import os
 from tabulate import tabulate
 import xml.etree.ElementTree as ET
+import xml.dom.minidom as minidom
 import struct
 
 class QvdSymbol:
@@ -65,6 +69,46 @@ class QvdSymbol:
             return self._double_value
         else:
             return None
+    
+    def to_byte_representation(self) -> bytes:
+        """
+        Converts the symbol to its byte representation.
+
+        :return: The byte representation of the symbol.
+        """
+        if self._int_value is not None and self._string_value is not None:
+            return b'\05' + self._int_value.to_bytes(4, byteorder='little', signed=True) + str.encode(self._string_value) + b'\0'
+        elif self._double_value is not None and self._string_value is not None:
+            return b'\06' + struct.pack('<d', self._double_value) + str.encode(self._string_value) + b'\0'
+        elif self._int_value is not None:
+            return b'\01' + self._int_value.to_bytes(4, byteorder='little', signed=True)
+        elif self._double_value is not None:
+            return b'\02' + struct.pack('<d', self._double_value)
+        elif self._string_value is not None:
+            return b'\04' + str.encode(self._string_value) + b'\0'
+        else:
+            raise ValueError('The symbol does not contain any value.')
+    
+    def __eq__(self, __value: object) -> bool:
+        """
+        Determines whether this symbol is equal to another object.
+
+        :param __value: The other object.
+        :return: True if the objects are equal, otherwise False.
+        """
+        if not isinstance(__value, QvdSymbol):
+            return False
+        
+        return self._int_value == __value._int_value and self._double_value == __value._double_value and self._string_value == __value._string_value
+    
+    def __ne__(self, __value: object) -> bool:
+        """
+        Determines whether this symbol is not equal to another object.
+
+        :param __value: The other object.
+        :return: True if the objects are not equal, otherwise False.
+        """
+        return not self.__eq__(__value)
 
     @staticmethod
     def from_int_value(int_value: int):
@@ -176,6 +220,14 @@ class QvdDataFrame:
         columns = [self._columns[index] for index in indices]
         return QvdDataFrame(data, columns)
     
+    def to_qvd(self, path: str):
+        """
+        Persists the data frame to a QVD file.
+
+        :param path: The path to the QVD file.
+        """
+        QvdFileWriter(path, self).save()
+    
     def to_dict(self) -> dict[str, list[any]]:
         """
         Converts the data frame to a dictionary.
@@ -232,10 +284,16 @@ class QvdFileReader:
         self._index_table = None
 
     def _read_data(self):
+        """
+        Reads the data of the QVD file into memory.
+        """
         with open(self._path, 'rb') as file:
             self._buffer = file.read()
 
     def _parse_header(self):
+        """
+        Parses the header of the QVD file.
+        """
         if not self._buffer:
             raise ValueError('The QVD file has not been loaded in the proper order or has not been loaded at all.')
         
@@ -260,6 +318,9 @@ class QvdFileReader:
         self._index_table_offset = self._symbol_table_offset + int(self._header.find('./Offset').text, 10)
     
     def _parse_symbol_table(self):
+        """
+        Parses the symbol table of the QVD file.
+        """
         if not all([self._buffer, self._header, self._symbol_table_offset, self._index_table_offset]):
             raise ValueError('The QVD file has not been loaded in the proper order or has not been loaded at all.')
 
@@ -328,6 +389,9 @@ class QvdFileReader:
             self._symbol_table[index] = symbols
 
     def _parse_index_table(self):
+        """
+        Parses the index table of the QVD file.
+        """
         if not (self._buffer and self._header and self._index_table_offset):
             raise ValueError('The QVD file has not been loaded in the proper order or has not been loaded at all.')
 
@@ -409,7 +473,321 @@ class QvdFileReader:
 
     @staticmethod
     def _convert_bits_to_int32(bits: list[int]) -> int:
+        """
+        Converts a list of bits to an integer.
+        """
         if len(bits) == 0:
             return 0
     
         return sum(bit * (2 ** index) for index, bit in enumerate(bits))
+
+
+class QvdFileWriter:
+    """
+    Persists a QVD file to disk.
+    """
+    def __init__(self, path: str, df: QvdDataFrame):
+        """
+        Constructs a new QVD file writer.
+
+        :param path: The path to the QVD file.
+        :param df: The data to persist.
+        """
+        self._path = path
+        self._df = df
+        self._header = None
+        self._symbol_buffer = None
+        self._symbol_table = None
+        self._symbol_table_metadata = None
+        self._index_buffer = None
+        self._index_table = None
+        self._index_table_metadata = None
+        self._record_byte_size = None
+    
+    def _write_data(self):
+        """
+        Writes the data to the QVD file.
+        """
+        with open(self._path, 'wb') as file:
+            file.write(self._header.encode())
+            file.write(b'\0')
+            file.write(self._symbol_buffer)
+            file.write(self._index_buffer)
+
+    def _build_header(self):
+        """
+        Builds the XML header of the QVD file.
+        """
+
+        doc = minidom.Document()
+
+        header_element = doc.createElement('QvdTableHeader')
+
+        qv_build_number_element = doc.createElement('QvBuildNumber')
+        qv_build_number_element.appendChild(doc.createTextNode('50667'))
+        header_element.appendChild(qv_build_number_element)
+
+        creator_doc_element = doc.createElement('CreatorDoc')
+        creator_doc_element.appendChild(doc.createTextNode(str(uuid.uuid4())))
+        header_element.appendChild(creator_doc_element)
+
+        create_utc_time_element = doc.createElement('CreateUtcTime')
+        create_utc_time_element.appendChild(doc.createTextNode(time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())))
+        header_element.appendChild(create_utc_time_element)
+
+        source_create_utc_time_element = doc.createElement('SourceCreateUtcTime')
+        source_create_utc_time_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(source_create_utc_time_element)
+
+        source_file_utc_time_element = doc.createElement('SourceFileUtcTime')
+        source_file_utc_time_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(source_file_utc_time_element)
+
+        source_file_size_element = doc.createElement('SourceFileSize')
+        source_file_size_element.appendChild(doc.createTextNode('-1'))
+        header_element.appendChild(source_file_size_element)
+
+        stale_utc_time_element = doc.createElement('StaleUtcTime')
+        stale_utc_time_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(stale_utc_time_element)
+
+        table_name_element = doc.createElement('TableName')
+        table_name_element.appendChild(doc.createTextNode(os.path.splitext(os.path.basename(self._path))[0]))
+        header_element.appendChild(table_name_element)
+
+        fields_element = doc.createElement('Fields')
+
+        for column_index, column_name in enumerate(self._df.columns):
+            field_element = doc.createElement('QvdFieldHeader')
+
+            field_name_element = doc.createElement('FieldName')
+            field_name_element.appendChild(doc.createTextNode(column_name))
+            field_element.appendChild(field_name_element)
+
+            bit_offset_element = doc.createElement('BitOffset')
+            bit_offset_element.appendChild(doc.createTextNode(str(self._index_table_metadata[column_index][0])))
+            field_element.appendChild(bit_offset_element)
+
+            bit_width_element = doc.createElement('BitWidth')
+            bit_width_element.appendChild(doc.createTextNode(str(self._index_table_metadata[column_index][1])))
+            field_element.appendChild(bit_width_element)
+            
+            bias_element = doc.createElement('Bias')
+            bias_element.appendChild(doc.createTextNode(str(self._index_table_metadata[column_index][2])))
+            field_element.appendChild(bias_element)
+
+            no_of_symbols_element = doc.createElement('NoOfSymbols')
+            no_of_symbols_element.appendChild(doc.createTextNode(str(len(self._symbol_table[column_index]))))
+            field_element.appendChild(no_of_symbols_element)
+            
+            offset_element = doc.createElement('Offset')
+            offset_element.appendChild(doc.createTextNode(str(self._symbol_table_metadata[column_index][0])))
+            field_element.appendChild(offset_element)
+            
+            length_element = doc.createElement('Length')
+            length_element.appendChild(doc.createTextNode(str(self._symbol_table_metadata[column_index][1])))
+            field_element.appendChild(length_element)
+            
+            comment_element = doc.createElement('Comment')
+            comment_element.appendChild(doc.createTextNode(''))
+            field_element.appendChild(comment_element)
+            
+            number_format_element = doc.createElement('NumberFormat')
+            
+            number_format_type_element = doc.createElement('Type')
+            number_format_type_element.appendChild(doc.createTextNode('UNKNOWN'))
+            number_format_element.appendChild(number_format_type_element)
+
+            number_format_n_dec_element = doc.createElement('nDec')
+            number_format_n_dec_element.appendChild(doc.createTextNode('0'))
+            number_format_element.appendChild(number_format_n_dec_element)
+
+            number_format_use_thou_element = doc.createElement('UseThou')
+            number_format_use_thou_element.appendChild(doc.createTextNode('0'))
+            number_format_element.appendChild(number_format_use_thou_element)
+
+            number_format_fmt_element = doc.createElement('Fmt')
+            number_format_fmt_element.appendChild(doc.createTextNode(''))
+            number_format_element.appendChild(number_format_fmt_element)
+
+            number_format_dec_element = doc.createElement('Dec')
+            number_format_dec_element.appendChild(doc.createTextNode(''))
+            number_format_element.appendChild(number_format_dec_element)
+
+            number_format_thou_element = doc.createElement('Thou')
+            number_format_thou_element.appendChild(doc.createTextNode(''))
+            number_format_element.appendChild(number_format_thou_element)
+
+            field_element.appendChild(number_format_element)
+
+            tags_element = doc.createElement('Tags')
+            field_element.appendChild(tags_element)
+
+            fields_element.appendChild(field_element)
+
+        header_element.appendChild(fields_element)
+
+        record_byte_size_element = doc.createElement('RecordByteSize')
+        record_byte_size_element.appendChild(doc.createTextNode(str(self._record_byte_size)))
+        header_element.appendChild(record_byte_size_element)
+
+        no_of_records_element = doc.createElement('NoOfRecords')
+        no_of_records_element.appendChild(doc.createTextNode(str(len(self._df.data))))
+        header_element.appendChild(no_of_records_element)
+
+        offset_element = doc.createElement('Offset')
+        offset_element.appendChild(doc.createTextNode(str(self._symbol_table_metadata[-1][0] + self._symbol_table_metadata[-1][1])))
+        header_element.appendChild(offset_element)
+
+        length_element = doc.createElement('Length')
+        length_element.appendChild(doc.createTextNode(str(len(self._index_buffer))))
+        header_element.appendChild(length_element)
+
+        compression_element = doc.createElement('Compression')
+        compression_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(compression_element)
+
+        comment_element = doc.createElement('Comment')
+        comment_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(comment_element)
+
+        encryption_info_element = doc.createElement('EncryptionInfo')
+        encryption_info_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(encryption_info_element)
+
+        table_tags_element = doc.createElement('TableTags')
+        table_tags_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(table_tags_element)
+
+        profiling_data_element = doc.createElement('ProfilingData')
+        profiling_data_element.appendChild(doc.createTextNode(''))
+        header_element.appendChild(profiling_data_element)
+
+        lineage_element = doc.createElement('Lineage')
+        
+        lineage_info_element = doc.createElement('LineageInfo')
+
+        discriminator_element = doc.createElement('Discriminator')
+        discriminator_element.appendChild(doc.createTextNode('INLINE;'))
+        lineage_info_element.appendChild(discriminator_element)
+
+        statement_element = doc.createElement('Statement')
+        statement_element.appendChild(doc.createTextNode(''))
+        lineage_info_element.appendChild(statement_element)
+
+        lineage_element.appendChild(lineage_info_element)
+
+        header_element.appendChild(lineage_element)
+
+        doc.appendChild(header_element)
+
+        self._header = doc.toprettyxml(indent="  ", encoding='utf-8', standalone=True, newl='\r\n').decode()
+        self._header = ' '.join([line + '\r\n' for line in self._header.splitlines() if line.strip()])
+    
+    def _build_symbol_table(self):
+        """
+        Builds the symbol table of the QVD file.
+        """
+
+        self._symbol_table = [None] * len(self._df.columns)
+        self._symbol_table_metadata = [None] * len(self._df.columns)
+        self._symbol_buffer = b''
+        
+        for column_index, column_name in enumerate(self._df.columns):
+            unique_values = set([row[column_index] for row in self._df.data])
+
+            symbols = []
+
+            for value in unique_values:
+                symbols.append(self._convert_raw_to_symbol(value))
+            
+            current_symbol_buffer = b''.join([symbol.to_byte_representation() for symbol in symbols])
+            self._symbol_buffer += current_symbol_buffer
+
+            symbols_length = len(current_symbol_buffer)
+            symbols_offset = sum([self._symbol_table_metadata[index][1] for index in range(column_index)])
+
+            self._symbol_table_metadata[column_index] = (symbols_offset, symbols_length)
+            self._symbol_table[column_index] = symbols
+    
+    def _build_index_table(self):
+        """
+        Builds the index table of the QVD file.
+        """
+
+        self._index_table = [None] * len(self._df.data)
+        self._index_table_metadata = [None] * len(self._df.columns)
+        self._index_buffer = b''
+
+        for row_index, row in enumerate(self._df.data):
+            indices = [None] * len(self._df.columns)
+
+            for column_index, column_name in enumerate(self._df.columns):
+                value = row[column_index]
+                symbol = self._convert_raw_to_symbol(value)
+                symbol_index = self._symbol_table[column_index].index(symbol)
+                indices[column_index] = symbol_index
+
+            for index_index, index in enumerate(indices):
+                bits = self._convert_int32_to_bits(index, 8)
+                bits = ''.join([str(bit) for bit in bits])
+                bits = bits.lstrip('0') or '0'
+                indices[index_index] = bits
+
+            self._index_table[row_index] = indices
+        
+        for column_index, column_name in enumerate(self._df.columns):
+            bit_offset = sum([self._index_table_metadata[index][1] for index in range(column_index) if self._index_table_metadata[index] is not None])
+            bit_width = max([len(bit_indices[column_index]) for bit_indices in self._index_table])
+            bias = 0
+            self._index_table_metadata[column_index] = (bit_offset, bit_width, bias)
+
+            for bit_indices in self._index_table:
+                bit_indices[column_index] = bit_indices[column_index].rjust(bit_width, '0')
+        
+        for bit_indices in self._index_table:
+            bits = ''.join(bit_indices)
+            padded_bits = '0' * (8 - len(bits) % 8) + bits
+            byte_values = [int(padded_bits[index:index + 8], 2) for index in range(0, len(padded_bits), 8)]
+            byte_representation = struct.pack('<' + 'B' * len(byte_values), *byte_values)
+
+            self._index_buffer += byte_representation
+        
+        self._record_byte_size = len(self._index_buffer) // len(self._df.data)
+
+    def _convert_raw_to_symbol(self, raw: any) -> QvdSymbol:
+        """
+        Converts a raw value to a QVD symbol.
+
+        :param raw: The raw value.
+        :return: The QVD symbol.
+        """
+        if isinstance(raw, int):
+            return QvdSymbol.from_dual_int_value(raw, str(raw))
+        elif isinstance(raw, float):
+            return QvdSymbol.from_dual_double_value(raw, str(raw))
+        elif isinstance(raw, str):
+            return QvdSymbol.from_string_value(raw)
+        else:
+            return QvdSymbol.from_string_value(str(raw))
+
+    @staticmethod
+    def _convert_int32_to_bits(value: int, width: int) -> list[int]:
+        """
+        Converts an integer to a list of bits.
+
+        :param value: The integer value.
+        :param width: The width of the bits.
+        :return: The list of bits.
+        """
+        return [int(bit) for bit in format(value, '0' + str(width) + 'b')]
+    
+    def save(self):
+        """
+        Persists the data frame to a QVD file.
+        """
+        
+        self._build_symbol_table()
+        self._build_index_table()
+        self._build_header()
+        self._write_data()
