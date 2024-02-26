@@ -214,8 +214,7 @@ class QvdDataFrame:
 
 class QvdFileReader:
     """
-    Parses a QVD file and loads it into memory. Basically, it is a builder for QvdFile instances, containing
-    the parsing logic for the QVD file format.
+    Parses a QVD file and loads it into memory.
     """
     def __init__(self, path: str):
         """
@@ -388,7 +387,18 @@ class QvdFileReader:
                 if symbol_index < 0:
                     row[field_index] = None
                 else:
-                    row[field_index] = self._symbol_table[field_index][symbol_index].to_primary_value()
+                    symbol = self._symbol_table[field_index][symbol_index].to_primary_value()
+
+                    if isinstance(symbol, str):
+                        try:
+                            symbol = int(symbol)
+                        except ValueError:
+                            try:
+                                symbol = float(symbol)
+                            except ValueError:
+                                pass
+
+                    row[field_index] = symbol
 
             return row
         
