@@ -481,7 +481,6 @@ class QvdFileReader:
     
         return sum(bit * (2 ** index) for index, bit in enumerate(bits))
 
-
 class QvdFileWriter:
     """
     Persists a QVD file to disk.
