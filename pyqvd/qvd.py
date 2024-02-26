@@ -2,6 +2,7 @@
 Contains classes for parsing and representing QVD files.
 """
 
+from tabulate import tabulate
 import xml.etree.ElementTree as ET
 import struct
 
@@ -85,95 +86,133 @@ class QvdSymbol:
     def from_dual_double_value(double_value: float, string_value: str):
         return QvdSymbol(None, double_value, string_value)
 
-class QvdFile:
+class QvdDataFrame:
     """
-    Represents a loaded QVD file.
+    Represents the data frame stored inside a QVD file.
     """
-
-    def __init__(self, path: str, header: ET.Element, symbol_table: list[any], index_table: list[list[int]]):
+    def __init__(self, data: list[list[any]], columns: list[str]):
         """
-        Constructs a new QVD file.
+        Constructs a new QVD data frame.
+
+        :param data: The data of the data frame.
+        :param columns: The columns of the data frame.
+        """
+        self._data = data
+        self._columns = columns
+    
+    @property
+    def data(self) -> list[list[any]]:
+        """
+        Returns the data of the data frame.
+
+        :return: The data.
+        """
+        return self._data
+    
+    @property
+    def columns(self) -> list[str]:
+        """
+        Returns the columns of the data frame.
+
+        :return: The columns.
+        """
+        return self._columns
+    
+    @property
+    def shape(self) -> tuple[int, int]:
+        """
+        Returns the shape of the data frame.
+
+        :return: The shape.
+        """
+        return len(self._data), len(self._columns)
+    
+    def head(self, n: int) -> 'QvdDataFrame':
+        """
+        Returns the first n rows of the data frame.
+
+        :param n: The number of rows to return.
+        :return: The first n rows.
+        """
+        return QvdDataFrame(self._data[:n], self._columns)
+    
+    def tail(self, n: int) -> 'QvdDataFrame':
+        """
+        Returns the last n rows of the data frame.
+
+        :param n: The number of rows to return.
+        :return: The last n rows.
+        """
+        return QvdDataFrame(self._data[-n:], self._columns)
+    
+    def rows(self, *args: int) -> 'QvdDataFrame':
+        """
+        Returns the specified rows of the data frame.
+
+        :param args: The rows to return.
+        :return: The specified rows.
+        """
+        return QvdDataFrame([self._data[index] for index in args], self._columns)
+    
+    def at(self, row: int, column: str) -> any:
+        """
+        Returns the value at the specified row and column.
+
+        :param row: The row index.
+        :param column: The column name.
+        :return: The value at the specified row and column.
+        """
+        return self._data[row][self._columns.index(column)]
+    
+    def select(self, *args: str) -> 'QvdDataFrame':
+        """
+        Selects the specified columns from the data frame.
+
+        :param args: The columns to select.
+        :return: The data frame with the selected columns.
+        """
+        indices = [self._columns.index(arg) for arg in args]
+        data = [[row[index] for index in indices] for row in self._data]
+        columns = [self._columns[index] for index in indices]
+        return QvdDataFrame(data, columns)
+    
+    def to_dict(self) -> dict[str, list[any]]:
+        """
+        Converts the data frame to a dictionary.
+
+        :return: The dictionary representation of the data frame.
+        """
+        return {'columns': self._columns, 'data': self._data}
+    
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the data frame.
+
+        :return: The string representation.
+        """
+        return tabulate(self._data, headers=self._columns)
+    
+    @staticmethod
+    def from_qvd(path: str) -> 'QvdDataFrame':
+        """
+        Loads a QVD file and returns its data frame.
 
         :param path: The path to the QVD file.
-        :param header: The parsed XML header of the QVD file.
-        :param symbol_table: The symbol table of the QVD file.
-        :param index_table: The index table of the QVD file.
+        :return: The data frame of the QVD file.
         """
-        self._path = path
-        self._header = header
-        self._symbol_table = symbol_table
-        self._index_table = index_table
-
-    @property
-    def path(self) -> str:
-        """
-        Retrieves the path to the QVD file.
-
-        :return: The path to the QVD file.
-        """
-        return self._path
-
-    @property
-    def field_names(self) -> list[str]:
-        """
-        Retrieves the field names of the QVD file.
-
-        :return: The field names.
-        """
-        return [field.find('FieldName').text for field in self._header.find('./Fields').findall('./QvdFieldHeader')]
-
-    @property
-    def number_of_rows(self) -> int:
-        """
-        Retrieves the total number of rows of the QVD file.
-
-        :return: The number of rows.
-        """
-        return int(self._header.find('NoOfRecords').text, 10)
-
-    def get_row(self, index: int) -> list[any]:
-        """
-        Retrieves the values of a specific row of the QVD file. Values are in the same order
-        as the field names.
-
-        :param index: The index of the row.
-        :return: The values of the row.
-        """
-        if index >= self.number_of_rows:
-            raise ValueError('Index is out of bounds')
-        
-        row = [None] * len(self._symbol_table)
-
-        for field_index, symbol_index in enumerate(self._index_table[index]):
-            if symbol_index < 0:
-                row[field_index] = None
-            else:
-                row[field_index] = self._symbol_table[field_index][symbol_index].to_primary_value()
-
-        return row
-
-    def get_table(self) -> dict[str, any]:
-        """
-        Retrieves the values of all rows of the QVD file as an array of row values. Each row
-        is an array of values in the same order as the field names.
-
-        :return: The columns and the data per row.
-        """
-        data = [self.get_row(index) for index in range(self.number_of_rows)]
-        return {'columns': self.field_names, 'data': data}
-
+        return QvdFileReader(path).load()
+    
     @staticmethod
-    def load(path: str):
+    def from_dict(data: dict[str, list[any]]) -> 'QvdDataFrame':
         """
-        Loads a QVD file from the file system.
+        Constructs a new QVD data frame from a dictionary.
 
-        :param path: The path to the QVD file to load.
-        :return: The loaded QVD file.
+        :param data: The dictionary representation of the data frame.
+        :return: The QVD data frame.
         """
-        parser = QvdFileParser(path)
-        return parser.load()
+        return QvdDataFrame(data['data'], data['columns'])
 
-class QvdFileParser:
+class QvdFileReader:
     """
     Parses a QVD file and loads it into memory. Basically, it is a builder for QvdFile instances, containing
     the parsing logic for the QVD file format.
@@ -320,7 +359,7 @@ class QvdFileParser:
                 if bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = QvdFileParser._convert_bits_to_int32(mask[bit_offset:bit_offset + bit_width])
+                    symbol_index = QvdFileReader._convert_bits_to_int32(mask[bit_offset:bit_offset + bit_width])
 
                 symbol_index += bias
                 symbol_indices.append(symbol_index)
@@ -328,7 +367,7 @@ class QvdFileParser:
             self._index_table.append(symbol_indices)
             pointer += record_size
     
-    def load(self) -> QvdFile:
+    def load(self) -> QvdDataFrame:
         """
         Loads the QVD file into memory and parses it.
 
@@ -339,7 +378,24 @@ class QvdFileParser:
         self._parse_symbol_table()
         self._parse_index_table()
 
-        return QvdFile(self._path, self._header, self._symbol_table, self._index_table)
+        def _get_row(index: int) -> list[any]:
+            if index >= len(self._index_table):
+                raise ValueError('Index is out of bounds')
+        
+            row = [None] * len(self._symbol_table)
+
+            for field_index, symbol_index in enumerate(self._index_table[index]):
+                if symbol_index < 0:
+                    row[field_index] = None
+                else:
+                    row[field_index] = self._symbol_table[field_index][symbol_index].to_primary_value()
+
+            return row
+        
+        data = [_get_row(index) for index in range(len(self._index_table))]
+        columns = [field.find('FieldName').text for field in self._header.find('./Fields').findall('./QvdFieldHeader')]
+
+        return QvdDataFrame(data, columns)
 
     @staticmethod
     def _convert_bits_to_int32(bits: list[int]) -> int:

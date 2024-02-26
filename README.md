@@ -15,10 +15,15 @@ structure.
   - [Symbol Table](#symbol-table)
   - [Index Table](#index-table)
 - [API Documentation](#api-documentation)
-  - [QvdFile](#qvdfile)
-    - [`@staticmethod load(path: str) -> QvdFile`](#staticmethod-loadpath-str---qvdfile)
-    - [`get_row(index: int) -> list[any]`](#get_rowindex-int---listany)
-    - [`get_table() -> dict[str, any]`](#get_table---dictstr-any)
+  - [QvdDataFrame](#qvddataframe)
+    - [`@staticmethod from_qvd(path: str) -> QvdDataFrame`](#staticmethod-from_qvdpath-str---qvddataframe)
+    - [`@staticmethod from_dict(data: dict[str, list[any]]) -> QvdDataFrame`](#staticmethod-from_dictdata-dictstr-listany---qvddataframe)
+    - [`head(n: int) -> QvdDataFrame`](#headn-int---qvddataframe)
+    - [`tail(n: int) -> QvdDataFrame`](#tailn-int---qvddataframe)
+    - [`select(*args: str) -> QvdDataFrame`](#selectargs-str---qvddataframe)
+    - [`rows(*args: int) -> QvdDataFrame`](#rowsargs-int---qvddataframe)
+    - [`at(row: int, column: str) -> any`](#atrow-int-column-str---any)
+    - [`to_dict() -> dict[str, list[any]]`](#to_dict---dictstr-listany)
 - [License](#license)
   - [Forbidden](#forbidden)
 
@@ -39,15 +44,14 @@ pip install PyQvd
 Below is a quick example how to use _PyQvd_.
 
 ```python
-from pyqvd import QvdFile
+from pyqvd import QvdDataFrame
 
-qvd_file = QvdFile.load('sample.qvd')
-data_table = qvd_file.get_table()
+df = QvdDataFrame.from_qvd('sample.qvd')
+print(df.head(5))
 ```
 
 The above example loads the _PyQvd_ library and parses an example QVD file. A QVD file is typically loaded using the static
-`QvdFile.load` function of the `QvdFile` class itself. After loading the file's content, numerous methods and properties
-are available to work with the parsed data.
+`QvdDataFrame.from_qvd` function of the `QvdDataFrame` class itself. After loading the file's content, numerous methods and properties are available to work with the parsed data.
 
 ## QVD File Format
 
@@ -89,33 +93,47 @@ data record, but only the indices that point to the values in the symbol table.
 
 ## API Documentation
 
-### QvdFile
+### QvdDataFrame
 
-The `QvdFile` class represents a finally parsed QVD file. It provides a high-level abstraction access to the QVD file content.
-This includes meta information as well as access to the actual data records.
+The `QvdDataFrame` class represents the data frame stored inside of a finally parsed QVD file. It provides a high-level abstraction access to the QVD file content. This includes meta information as well as access to the actual data records.
 
-| Property         | Type  | Description                                                         |
-| ---------------- | ----- | ------------------------------------------------------------------- |
-| `path`           | `str` | The path to the QVD file that was parsed.                           |
-| `number_of_rows` | `int` | The number of data records/rows that are contained in the QVD file. |
-| `field_names`    | `str` | The names of the fields that are contained in the QVD file.         |
+| Property  | Type              | Description                                                                                 |
+| --------- | ----------------- | ------------------------------------------------------------------------------------------- |
+| `shape`   | `tuple[int, int]` | The shape of the data frame. First value is number of rows, second value number of columns. |
+| `data`    | `list[list[any]]` | The actual data. The first dimension represents the single rows.                            |
+| `columns` | `list[str]`       | The names of the fields that are contained in the QVD file.                                 |
 
-#### `@staticmethod load(path: str) -> QvdFile`
+#### `@staticmethod from_qvd(path: str) -> QvdDataFrame`
 
-The static method `QvdFile.load` loads a QVD file from the given path and parses it. The method returns a promise that resolves
-to a `QvdFile` instance.
+The static method `QvdDataFrame.from_qvd` loads a QVD file from the given path and parses it. The method returns a `QvdDataFrame` instance.
 
-#### `get_row(index: int) -> list[any]`
+#### `@staticmethod from_dict(data: dict[str, list[any]]) -> QvdDataFrame`
 
-The method `get_row` returns the data record at the given index. The method returns an array
-of the row's values. The order of the values in the array corresponds to the order of the fields in the QVD file.
+The static method `QvdDataFrame.from_dict` constructs a data frame from a dictionary. The dictionary must contain the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
 
-#### `get_table() -> dict[str, any]`
+#### `head(n: int) -> QvdDataFrame`
 
-The method `get_table` returns the entire data table of the QVD file. The method returns an object with the columns and the
-actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file,
-similar to the `field_names` property. The data property is an array of arrays that contains the actual data records. The order
-of the values in the inner arrays corresponds to the order of the fields in the QVD file.
+The method `head` returns the first `n` rows of the data frame.
+
+#### `tail(n: int) -> QvdDataFrame`
+
+The method `tail` returns the last `n` rows of the data frame.
+
+#### `select(*args: str) -> QvdDataFrame`
+
+The method `select` returns a new data frame that contains only the specified columns.
+
+#### `rows(*args: int) -> QvdDataFrame`
+
+The method `rows` returns a new data frame that contains only the specified rows.
+
+#### `at(row: int, column: str) -> any`
+
+The method `at` returns the value at the specified row and column.
+
+#### `to_dict() -> dict[str, list[any]]`
+
+The method `to_dict` returns the data frame as a dictionary. The dictionary contains the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
 
 ## License
 
