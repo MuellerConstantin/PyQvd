@@ -5,10 +5,14 @@ Contains classes for parsing and representing QVD files.
 import uuid
 import time
 import os
-from tabulate import tabulate
+import struct
+from typing import TYPE_CHECKING
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
-import struct
+from tabulate import tabulate
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 class QvdSymbol:
     """
@@ -171,7 +175,7 @@ class QvdDataFrame:
         """
         return len(self._data), len(self._columns)
     
-    def head(self, n: int) -> 'QvdDataFrame':
+    def head(self, n: int = 5) -> 'QvdDataFrame':
         """
         Returns the first n rows of the data frame.
 
@@ -180,7 +184,7 @@ class QvdDataFrame:
         """
         return QvdDataFrame(self._data[:n], self._columns)
     
-    def tail(self, n: int) -> 'QvdDataFrame':
+    def tail(self, n: int = 5) -> 'QvdDataFrame':
         """
         Returns the last n rows of the data frame.
 
@@ -236,6 +240,19 @@ class QvdDataFrame:
         """
         return {'columns': self._columns, 'data': self._data}
     
+    def to_pandas(self) -> 'pd.DataFrame':
+        """
+        Converts the data frame to a pandas data frame.
+
+        :return: The pandas data frame.
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError("Pandas is not installed. Please install Pandas to use this method.")
+
+        return pd.DataFrame(self._data, columns=self._columns)
+    
     def __str__(self) -> str:
         """
         Returns a string representation of the data frame.
@@ -263,6 +280,16 @@ class QvdDataFrame:
         :return: The QVD data frame.
         """
         return QvdDataFrame(data['data'], data['columns'])
+    
+    @staticmethod
+    def from_pandas(df: 'pd.DataFrame') -> 'QvdDataFrame':
+        """
+        Constructs a new QVD data frame from a pandas data frame.
+
+        :param df: The pandas data frame.
+        :return: The QVD data frame.
+        """
+        return QvdDataFrame(df.values.tolist(), df.columns.tolist())
 
 class QvdFileReader:
     """

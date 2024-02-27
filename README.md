@@ -18,6 +18,7 @@ structure or vice versa.
   - [QvdDataFrame](#qvddataframe)
     - [`@staticmethod from_qvd(path: str) -> QvdDataFrame`](#staticmethod-from_qvdpath-str---qvddataframe)
     - [`@staticmethod from_dict(data: dict[str, list[any]]) -> QvdDataFrame`](#staticmethod-from_dictdata-dictstr-listany---qvddataframe)
+    - [`@staticmethod from_pandas(data: pandas.DataFrame) -> QvdDataFrame`](#staticmethod-from_pandasdata-pandasdataframe---qvddataframe)
     - [`head(n: int) -> QvdDataFrame`](#headn-int---qvddataframe)
     - [`tail(n: int) -> QvdDataFrame`](#tailn-int---qvddataframe)
     - [`select(*args: str) -> QvdDataFrame`](#selectargs-str---qvddataframe)
@@ -25,6 +26,7 @@ structure or vice versa.
     - [`at(row: int, column: str) -> any`](#atrow-int-column-str---any)
     - [`to_dict() -> dict[str, list[any]]`](#to_dict---dictstr-listany)
     - [`to_qvd(path: str) -> None`](#to_qvdpath-str---none)
+    - [`to_pandas() -> pandas.DataFrame`](#to_pandas---pandasdataframe)
 - [License](#license)
   - [Forbidden](#forbidden)
 
@@ -112,6 +114,10 @@ The static method `QvdDataFrame.from_qvd` loads a QVD file from the given path a
 
 The static method `QvdDataFrame.from_dict` constructs a data frame from a dictionary. The dictionary must contain the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
 
+#### `@staticmethod from_pandas(data: pandas.DataFrame) -> QvdDataFrame`
+
+The static method `QvdDataFrame.from_pandas` constructs a data frame from a pandas data frame.
+
 #### `head(n: int) -> QvdDataFrame`
 
 The method `head` returns the first `n` rows of the data frame.
@@ -139,6 +145,10 @@ The method `to_dict` returns the data frame as a dictionary. The dictionary cont
 #### `to_qvd(path: str) -> None`
 
 The method `to_qvd` writes the data frame to a QVD file at the specified path.
+
+#### `to_pandas() -> pandas.DataFrame`
+
+The method `to_pandas` returns the data frame as a pandas data frame.
 
 ## License
 
