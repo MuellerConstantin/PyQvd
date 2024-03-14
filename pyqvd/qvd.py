@@ -3,13 +3,14 @@ Contains classes for parsing and representing QVD files.
 """
 
 import xml.etree.ElementTree as ET
+from typing import Union, List, Dict
 import struct
 
 class QvdSymbol:
     """
     Represents a Qlik symbol/value, stored in a QVD file.
     """
-    def __init__(self, int_value: int | None, double_value: float | None, string_value: str | None):
+    def __init__(self, int_value: Union[int, None], double_value: Union[float, None], string_value: Union[str, None]):
         """
         Constructs a new QVD symbol.
 
@@ -23,7 +24,7 @@ class QvdSymbol:
         self._string_value = string_value
 
     @property
-    def int_value(self) -> int | None:
+    def int_value(self) -> Union[int, None]:
         """
         Returns the integer value of this symbol.
 
@@ -32,7 +33,7 @@ class QvdSymbol:
         return self._int_value
 
     @property
-    def double_value(self) -> float | None:
+    def double_value(self) -> Union[float, None]:
         """
         Returns the double value of this symbol.
 
@@ -41,7 +42,7 @@ class QvdSymbol:
         return self._double_value
 
     @property
-    def string_value(self) -> str | None:
+    def string_value(self) -> Union[str, None]:
         """
         Returns the string value of this symbol.
 
@@ -49,7 +50,7 @@ class QvdSymbol:
         """
         return self._string_value
 
-    def to_primary_value(self) -> str | int | float | None:
+    def to_primary_value(self) -> Union[int, float, str, None]:
         """
         Retrieves the primary value of this symbol. The primary value is a descriptive raw value.
         It is either the string value, the integer value, or the double value, prioritized in this order.
@@ -58,31 +59,48 @@ class QvdSymbol:
         """
         if self._string_value is not None:
             return self._string_value
-        elif self._int_value is not None:
+
+        if self._int_value is not None:
             return self._int_value
-        elif self._double_value is not None:
+
+        if self._double_value is not None:
             return self._double_value
-        else:
-            return None
+
+        return None
 
     @staticmethod
     def from_int_value(int_value: int):
+        """
+        Constructs a new QVD symbol with an integer value.
+        """
         return QvdSymbol(int_value, None, None)
 
     @staticmethod
     def from_double_value(double_value: float):
+        """
+        Constructs a new QVD symbol with a double value.
+        """
         return QvdSymbol(None, double_value, None)
 
     @staticmethod
     def from_string_value(string_value: str):
+        """
+        Constructs a new QVD symbol with a string value.
+        """
         return QvdSymbol(None, None, string_value)
 
     @staticmethod
     def from_dual_int_value(int_value: int, string_value: str):
+        """
+        Constructs a new QVD symbol with an integer value and a string value.
+        """
         return QvdSymbol(int_value, None, string_value)
 
     @staticmethod
     def from_dual_double_value(double_value: float, string_value: str):
+        """
+        Constructs a new QVD symbol with a double value and a string value.
+        """
         return QvdSymbol(None, double_value, string_value)
 
 class QvdFile:
@@ -90,7 +108,7 @@ class QvdFile:
     Represents a loaded QVD file.
     """
 
-    def __init__(self, path: str, header: ET.Element, symbol_table: list[any], index_table: list[list[int]]):
+    def __init__(self, path: str, header: ET.Element, symbol_table: List[any], index_table: List[List[int]]):
         """
         Constructs a new QVD file.
 
@@ -114,7 +132,7 @@ class QvdFile:
         return self._path
 
     @property
-    def field_names(self) -> list[str]:
+    def field_names(self) -> List[str]:
         """
         Retrieves the field names of the QVD file.
 
@@ -131,7 +149,7 @@ class QvdFile:
         """
         return int(self._header.find('NoOfRecords').text, 10)
 
-    def get_row(self, index: int) -> list[any]:
+    def get_row(self, index: int) -> List[any]:
         """
         Retrieves the values of a specific row of the QVD file. Values are in the same order
         as the field names.
@@ -141,7 +159,7 @@ class QvdFile:
         """
         if index >= self.number_of_rows:
             raise ValueError('Index is out of bounds')
-        
+
         row = [None] * len(self._symbol_table)
 
         for field_index, symbol_index in enumerate(self._index_table[index]):
@@ -152,7 +170,7 @@ class QvdFile:
 
         return row
 
-    def get_table(self) -> dict[str, any]:
+    def get_table(self) -> Dict[str, any]:
         """
         Retrieves the values of all rows of the QVD file as an array of row values. Each row
         is an array of values in the same order as the field names.
@@ -186,7 +204,7 @@ class QvdFileParser:
         """
         self._path = path
         self._buffer = None
-        self._header_offfset = None
+        self._header_offset = None
         self._symbol_table_offset = None
         self._index_table_offset = None
         self._header = None
@@ -200,15 +218,15 @@ class QvdFileParser:
     def _parse_header(self):
         if not self._buffer:
             raise ValueError('The QVD file has not been loaded in the proper order or has not been loaded at all.')
-        
+
         HEADER_DELIMITER = '\r\n\0'
-        
+
         header_begin_index = 0
         header_delimiter_index = self._buffer.find(str.encode(HEADER_DELIMITER), header_begin_index)
 
         if header_delimiter_index == -1:
             raise ValueError('The XML header section does not exist or is not properly delimited from the binary data.')
-        
+
         header_end_index = header_delimiter_index + len(HEADER_DELIMITER)
         header_buffer = self._buffer[header_begin_index:header_end_index].decode()
 
@@ -216,11 +234,11 @@ class QvdFileParser:
 
         if not self._header:
             raise ValueError('The XML header could not be parsed.')
-        
-        self._headerOffset = header_begin_index
+
+        self._header_offset = header_begin_index
         self._symbol_table_offset = header_end_index
         self._index_table_offset = self._symbol_table_offset + int(self._header.find('./Offset').text, 10)
-    
+
     def _parse_symbol_table(self):
         if not all([self._buffer, self._header, self._symbol_table_offset, self._index_table_offset]):
             raise ValueError('The QVD file has not been loaded in the proper order or has not been loaded at all.')
@@ -257,7 +275,7 @@ class QvdFileParser:
                     while symbol_buffer[pointer] != 0:
                         value += chr(symbol_buffer[pointer])
                         pointer += 1
-                    
+
                     pointer += 1
                     symbols.append(QvdSymbol.from_string_value(value))
                 elif type_byte == 5:
@@ -269,7 +287,7 @@ class QvdFileParser:
                     while symbol_buffer[pointer] != 0:
                         string_value += chr(symbol_buffer[pointer])
                         pointer += 1
-                    
+
                     pointer += 1
                     symbols.append(QvdSymbol.from_dual_int_value(int_value, string_value))
                 elif type_byte == 6:
@@ -281,12 +299,12 @@ class QvdFileParser:
                     while symbol_buffer[pointer] != 0:
                         string_value += chr(symbol_buffer[pointer])
                         pointer += 1
-                    
+
                     pointer += 1
                     symbols.append(QvdSymbol.from_dual_double_value(double_value, string_value))
                 else:
                     raise ValueError('The symbol type byte is not recognized. Unknown data type: ' + hex(type_byte))
-            
+
             self._symbol_table[index] = symbols
 
     def _parse_index_table(self):
@@ -302,11 +320,11 @@ class QvdFileParser:
 
         pointer = 0
         while pointer < len(index_buffer):
-            bytes = index_buffer[pointer:pointer + record_size]
-            bytes = bytes[::-1]
-            bytes = struct.unpack('<' + 'B' * len(bytes), bytes)
+            buffer_bytes = index_buffer[pointer:pointer + record_size]
+            buffer_bytes = buffer_bytes[::-1]
+            buffer_bytes = struct.unpack('<' + 'B' * len(buffer_bytes), buffer_bytes)
 
-            mask = ''.join(format(byte, '08b') for byte in bytes)
+            mask = ''.join(format(byte, '08b') for byte in buffer_bytes)
             mask = mask[::-1]
             mask = [int(bit) for bit in mask]
 
@@ -324,10 +342,10 @@ class QvdFileParser:
 
                 symbol_index += bias
                 symbol_indices.append(symbol_index)
-            
+
             self._index_table.append(symbol_indices)
             pointer += record_size
-    
+
     def load(self) -> QvdFile:
         """
         Loads the QVD file into memory and parses it.
@@ -342,8 +360,8 @@ class QvdFileParser:
         return QvdFile(self._path, self._header, self._symbol_table, self._index_table)
 
     @staticmethod
-    def _convert_bits_to_int32(bits: list[int]) -> int:
+    def _convert_bits_to_int32(bits: List[int]) -> int:
         if len(bits) == 0:
             return 0
-    
+
         return sum(bit * (2 ** index) for index, bit in enumerate(bits))
