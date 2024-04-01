@@ -1,7 +1,15 @@
+"""
+Tests the functionality related to persisting files.
+"""
+
 import os
 from pyqvd import QvdDataFrame
 
 def test_write_qvd_file():
+    """
+    Test if a data frame, constructed from a dictionary, can be
+    written to file successfully.
+    """
     raw_df = {
         'columns': ['Key', 'Value'],
         'data': [
