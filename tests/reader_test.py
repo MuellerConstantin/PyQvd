@@ -1,9 +1,16 @@
+"""
+Tests the functionality related to reading files.
+"""
+
 import os
 import time
 import pytest
 from pyqvd import QvdDataFrame
 
 def test_read_qvd_file_with_1000_rows():
+    """
+    Tests if a small QVD file can be parsed properly.
+    """
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/small.qvd'))
     end = int(time.time() * 1000)
@@ -20,6 +27,9 @@ def test_read_qvd_file_with_1000_rows():
     assert df.head(5).shape == (5, 8)
 
 def test_read_qvd_file_with_20000_rows():
+    """
+    Tests if a medium QVD file can be parsed properly.
+    """
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/medium.qvd'))
     end = int(time.time() * 1000)
@@ -36,6 +46,9 @@ def test_read_qvd_file_with_20000_rows():
     assert df.head(5).shape == (5, 13)
 
 def test_read_qvd_file_with_60000_rows():
+    """
+    Tests if a large QVD file can be parsed properly.
+    """
     start = int(time.time() * 1000)
     df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/large.qvd'))
     end = int(time.time() * 1000)
@@ -52,5 +65,8 @@ def test_read_qvd_file_with_60000_rows():
     assert df.head(5).shape == (5, 11)
 
 def test_read_damaged_qvd_file():
+    """
+    Tests if reading a damaged QVD file fails as expected.
+    """
     with pytest.raises(Exception):
         QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/damaged.qvd'))
