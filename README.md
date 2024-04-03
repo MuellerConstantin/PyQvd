@@ -17,15 +17,17 @@ structure or vice versa.
 - [API Documentation](#api-documentation)
   - [QvdDataFrame](#qvddataframe)
     - [`@staticmethod from_qvd(path: str) -> QvdDataFrame`](#staticmethod-from_qvdpath-str---qvddataframe)
-    - [`@staticmethod from_dict(data: dict[str, list[any]]) -> QvdDataFrame`](#staticmethod-from_dictdata-dictstr-listany---qvddataframe)
+    - [`@staticmethod from_stream(source: BinaryIO) -> QvdDataFrame`](#staticmethod-from_streamsource-binaryio---qvddataframe)
+    - [`@staticmethod from_dict(data: Dict[str, List[any]]) -> QvdDataFrame`](#staticmethod-from_dictdata-dictstr-listany---qvddataframe)
     - [`@staticmethod from_pandas(data: pandas.DataFrame) -> QvdDataFrame`](#staticmethod-from_pandasdata-pandasdataframe---qvddataframe)
     - [`head(n: int) -> QvdDataFrame`](#headn-int---qvddataframe)
     - [`tail(n: int) -> QvdDataFrame`](#tailn-int---qvddataframe)
     - [`select(*args: str) -> QvdDataFrame`](#selectargs-str---qvddataframe)
     - [`rows(*args: int) -> QvdDataFrame`](#rowsargs-int---qvddataframe)
     - [`at(row: int, column: str) -> any`](#atrow-int-column-str---any)
-    - [`to_dict() -> dict[str, list[any]]`](#to_dict---dictstr-listany)
+    - [`to_dict() -> Dict[str, List[any]]`](#to_dict---dictstr-listany)
     - [`to_qvd(path: str) -> None`](#to_qvdpath-str---none)
+    - [`to_stream(target: BinaryIO) -> None`](#to_streamtarget-binaryio---none)
     - [`to_pandas() -> pandas.DataFrame`](#to_pandas---pandasdataframe)
 - [License](#license)
   - [Forbidden](#forbidden)
@@ -110,7 +112,11 @@ The `QvdDataFrame` class represents the data frame stored inside of a finally pa
 
 The static method `QvdDataFrame.from_qvd` loads a QVD file from the given path and parses it. The method returns a `QvdDataFrame` instance.
 
-#### `@staticmethod from_dict(data: dict[str, list[any]]) -> QvdDataFrame`
+#### `@staticmethod from_stream(source: BinaryIO) -> QvdDataFrame`
+
+The static method `QvdDataFrame.from_stream` loads a QVD file from the given binary stream. The method returns a `QvdDataFrame` instance.
+
+#### `@staticmethod from_dict(data: Dict[str, List[any]]) -> QvdDataFrame`
 
 The static method `QvdDataFrame.from_dict` constructs a data frame from a dictionary. The dictionary must contain the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
 
@@ -138,13 +144,17 @@ The method `rows` returns a new data frame that contains only the specified rows
 
 The method `at` returns the value at the specified row and column.
 
-#### `to_dict() -> dict[str, list[any]]`
+#### `to_dict() -> Dict[str, List[any]]`
 
 The method `to_dict` returns the data frame as a dictionary. The dictionary contains the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
 
 #### `to_qvd(path: str) -> None`
 
 The method `to_qvd` writes the data frame to a QVD file at the specified path.
+
+#### `to_stream(target: BinaryIO) -> None`
+
+The method `to_stream` writes the data frame as a QVD file to a binary stream.
 
 #### `to_pandas() -> pandas.DataFrame`
 
