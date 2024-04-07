@@ -70,3 +70,20 @@ def test_read_damaged_qvd_file():
     """
     with pytest.raises(Exception):
         QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/damaged.qvd'))
+
+def test_read_binary_file_stream():
+    """
+    Tests if a binary file stream can be read properly.
+    """
+    with open(os.path.join(os.path.dirname(__file__), 'data/small.qvd'), 'rb') as file:
+        df = QvdDataFrame.from_stream(file)
+
+    assert df is not None
+    assert df.shape is not None
+    assert df.shape[0] == 606
+    assert df.shape[1] == 8
+    assert df.columns is not None
+    assert len(df.columns) == 8
+    assert df.data is not None
+    assert len(df.data) == 606
+    assert df.head(5).shape == (5, 8)
