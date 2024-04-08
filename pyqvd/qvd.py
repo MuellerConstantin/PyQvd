@@ -85,11 +85,12 @@ class QvdSymbol:
         if self._int_value is not None and self._string_value is not None:
             return (b"\05" +
                     self._int_value.to_bytes(4, byteorder="little", signed=True) +
-                    str.encode(self._string_value) +
+                    str.encode(self._string_value, encoding="utf-8") +
                     b"\0")
 
         if self._double_value is not None and self._string_value is not None:
-            return b"\06" + struct.pack("<d", self._double_value) + str.encode(self._string_value) + b"\0"
+            return (b"\06" + struct.pack("<d", self._double_value) +
+                    str.encode(self._string_value, encoding="utf-8") + b"\0")
 
         if self._int_value is not None:
             return b"\01" + self._int_value.to_bytes(4, byteorder="little", signed=True)
@@ -98,7 +99,7 @@ class QvdSymbol:
             return b"\02" + struct.pack("<d", self._double_value)
 
         if self._string_value is not None:
-            return b"\04" + str.encode(self._string_value) + b"\0"
+            return b"\04" + str.encode(self._string_value, encoding="utf-8") + b"\0"
 
         raise ValueError("The symbol does not contain any value.")
 
@@ -431,36 +432,39 @@ class QvdFileReader:
                     pointer += 8
                     symbols.append(QvdSymbol.from_double_value(value))
                 elif type_byte == 4:
-                    value = ""
+                    byte_data = bytearray()
 
                     while symbol_buffer[pointer] != 0:
-                        value += chr(symbol_buffer[pointer])
+                        byte_data.append(symbol_buffer[pointer])
                         pointer += 1
 
+                    value = byte_data.decode(encoding="utf-8")
                     pointer += 1
                     symbols.append(QvdSymbol.from_string_value(value))
                 elif type_byte == 5:
-                    byte_data = symbol_buffer[pointer:pointer + 4]
-                    int_value = int.from_bytes(byte_data, byteorder="little", signed=True)
+                    int_byte_data = symbol_buffer[pointer:pointer + 4]
+                    int_value = int.from_bytes(int_byte_data, byteorder="little", signed=True)
                     pointer += 4
 
-                    string_value = ""
+                    string_byte_data = bytearray()
                     while symbol_buffer[pointer] != 0:
-                        string_value += chr(symbol_buffer[pointer])
+                        string_byte_data.append(symbol_buffer[pointer])
                         pointer += 1
 
+                    string_value = string_byte_data.decode(encoding="utf-8")
                     pointer += 1
                     symbols.append(QvdSymbol.from_dual_int_value(int_value, string_value))
                 elif type_byte == 6:
-                    byte_data = symbol_buffer[pointer:pointer + 8]
-                    double_value = struct.unpack("<d", byte_data)[0]
+                    double_byte_data = symbol_buffer[pointer:pointer + 8]
+                    double_value = struct.unpack("<d", double_byte_data)[0]
                     pointer += 8
 
-                    string_value = ""
+                    string_byte_data = bytearray()
                     while symbol_buffer[pointer] != 0:
                         string_value += chr(symbol_buffer[pointer])
                         pointer += 1
 
+                    string_value = string_byte_data.decode(encoding="utf-8")
                     pointer += 1
                     symbols.append(QvdSymbol.from_dual_double_value(double_value, string_value))
                 else:
