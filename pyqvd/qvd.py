@@ -869,19 +869,17 @@ class QvdFileWriter:
         for row_index, row in enumerate(self._df.data):
             indices = [None] * len(self._df.columns)
 
-            # Convert the raw values to indices referring to the symbol table
             for column_index, _ in enumerate(self._df.columns):
+                # Convert the raw values to indices referring to the symbol table
                 value = row[column_index]
                 symbol = self._convert_raw_to_symbol(value)
                 symbol_index = self._symbol_table[column_index][symbol]
-                indices[column_index] = symbol_index
 
-            # Convert the integer indices to binary representation
-            for index_index, index in enumerate(indices):
-                bits = self._convert_int32_to_bits(index, 8)
+                # Convert the integer indices to binary representation
+                bits = self._convert_int32_to_bits(symbol_index, 8)
                 bits = "".join([str(bit) for bit in bits])
                 bits = bits.lstrip("0") or "0"
-                indices[index_index] = bits
+                indices[column_index] = bits
 
             self._index_table[row_index] = indices
 
