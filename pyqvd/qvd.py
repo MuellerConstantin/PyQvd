@@ -126,6 +126,14 @@ class QvdSymbol:
         """
         return not self.__eq__(__value)
 
+    def __hash__(self) -> int:
+        """
+        Returns the hash value of this symbol.
+
+        :return: The hash value.
+        """
+        return hash((self._int_value, self._double_value, self._string_value))
+
     @staticmethod
     def from_int_value(int_value: int):
         """
@@ -792,10 +800,11 @@ class QvdFileWriter:
         for column_index, _ in enumerate(self._df.columns):
             unique_values = QvdFileWriter._get_unique_values([row[column_index] for row in self._df.data])
 
-            symbols = []
+            symbols = {}
 
             for value in unique_values:
-                symbols.append(self._convert_raw_to_symbol(value))
+                symbol = self._convert_raw_to_symbol(value)
+                symbols[symbol] = len(symbols)
 
             current_symbol_buffer = b"".join([symbol.to_byte_representation() for symbol in symbols])
             self._symbol_buffer += current_symbol_buffer
@@ -864,7 +873,7 @@ class QvdFileWriter:
             for column_index, _ in enumerate(self._df.columns):
                 value = row[column_index]
                 symbol = self._convert_raw_to_symbol(value)
-                symbol_index = self._symbol_table[column_index].index(symbol)
+                symbol_index = self._symbol_table[column_index][symbol]
                 indices[column_index] = symbol_index
 
             # Convert the integer indices to binary representation
@@ -904,7 +913,8 @@ class QvdFileWriter:
 
         self._record_byte_size = len(self._index_buffer) // len(self._df.data)
 
-    def _convert_raw_to_symbol(self, raw: any) -> QvdSymbol:
+    @staticmethod
+    def _convert_raw_to_symbol(raw: any) -> QvdSymbol:
         """
         Converts a raw value to a QVD symbol.
 
@@ -938,13 +948,8 @@ class QvdFileWriter:
         """
         Determines the unique values of a given list.
         """
-        unique_values = []
-
-        for value in values:
-            if value not in unique_values:
-                unique_values.append(value)
-
-        return unique_values
+        # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
+        return list(dict.fromkeys(values).keys())
 
     def save(self):
         """
