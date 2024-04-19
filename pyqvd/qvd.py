@@ -798,7 +798,8 @@ class QvdFileWriter:
         self._symbol_buffer = b""
 
         for column_index, _ in enumerate(self._df.columns):
-            unique_values = QvdFileWriter._get_unique_values([row[column_index] for row in self._df.data])
+            # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
+            unique_values = list(dict.fromkeys([row[column_index] for row in self._df.data]).keys())
 
             symbols = {}
 
@@ -876,10 +877,8 @@ class QvdFileWriter:
                 symbol_index = self._symbol_table[column_index][symbol]
 
                 # Convert the integer indices to binary representation
-                bits = self._convert_int32_to_bits(symbol_index, 8)
-                bits = "".join([str(bit) for bit in bits])
-                bits = bits.lstrip("0") or "0"
-                indices[column_index] = bits
+                index_bits = format(symbol_index, "b")
+                indices[column_index] = index_bits
 
             self._index_table[row_index] = indices
 
@@ -929,25 +928,6 @@ class QvdFileWriter:
             return QvdSymbol.from_string_value(raw)
 
         return QvdSymbol.from_string_value(str(raw))
-
-    @staticmethod
-    def _convert_int32_to_bits(value: int, width: int) -> List[int]:
-        """
-        Converts an integer to a list of bits.
-
-        :param value: The integer value.
-        :param width: The width of the bits.
-        :return: The list of bits.
-        """
-        return [int(bit) for bit in format(value, "0" + str(width) + "b")]
-
-    @staticmethod
-    def _get_unique_values(values: List[any]) -> List[any]:
-        """
-        Determines the unique values of a given list.
-        """
-        # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
-        return list(dict.fromkeys(values).keys())
 
     def save(self):
         """
