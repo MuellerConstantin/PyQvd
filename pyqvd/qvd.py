@@ -802,9 +802,16 @@ class QvdFileWriter:
             unique_values = list(dict.fromkeys([row[column_index] for row in self._df.data]).keys())
 
             symbols = {}
+            contains_none = False
 
             for value in unique_values:
                 symbol = self._convert_raw_to_symbol(value)
+
+                # Skip None values, they are represented by bias shifted negative indices
+                if symbol is None:
+                    contains_none = True
+                    continue
+
                 symbols[symbol] = len(symbols)
 
             current_symbol_buffer = b"".join([symbol.to_byte_representation() for symbol in symbols])
@@ -813,7 +820,7 @@ class QvdFileWriter:
             symbols_length = len(current_symbol_buffer)
             symbols_offset = sum([self._symbol_table_metadata[index][1] for index in range(column_index)])
 
-            self._symbol_table_metadata[column_index] = (symbols_offset, symbols_length)
+            self._symbol_table_metadata[column_index] = (symbols_offset, symbols_length, contains_none)
             self._symbol_table[column_index] = symbols
 
     def _build_index_table(self):
@@ -874,7 +881,17 @@ class QvdFileWriter:
                 # Convert the raw values to indices referring to the symbol table
                 value = row[column_index]
                 symbol = self._convert_raw_to_symbol(value)
-                symbol_index = self._symbol_table[column_index][symbol]
+                field_contains_none = self._symbol_table_metadata[column_index][2]
+
+                # None values are represented by bias shifted negative indices
+                if symbol is None:
+                    symbol_index = 0
+                else:
+                    # In order to represent None values, the indices are shifted by the bias value of the column
+                    if field_contains_none:
+                        symbol_index = self._symbol_table[column_index][symbol] + 2
+                    else:
+                        symbol_index = self._symbol_table[column_index][symbol]
 
                 # Convert the integer indices to binary representation
                 index_bits = format(symbol_index, "b")
@@ -884,12 +901,14 @@ class QvdFileWriter:
 
         # Normalize the bit representation of the indices by padding with zeros
         for column_index, _ in enumerate(self._df.columns):
+            field_contains_none = self._symbol_table_metadata[column_index][2]
             # Bit offset is the sum of the bit widths of all previous columns
             bit_offset = sum([self._index_table_metadata[index][1] for index in range(column_index)
                               if self._index_table_metadata[index] is not None])
             # Bit width is the maximum bit width of all indices of the column
             bit_width = max([len(bit_indices[column_index]) for bit_indices in self._index_table])
-            bias = 0
+            # Bias is used to shift the indices to represent None values
+            bias = -2 if field_contains_none else 0
             self._index_table_metadata[column_index] = (bit_offset, bit_width, bias)
 
             # Pad the bit representation of the indices with zeros to match the bit width
@@ -918,6 +937,9 @@ class QvdFileWriter:
         :param raw: The raw value.
         :return: The QVD symbol.
         """
+        if raw is None:
+            return None
+
         if isinstance(raw, int):
             return QvdSymbol.from_int_value(raw)
 
