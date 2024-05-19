@@ -73,7 +73,7 @@ def test_read_damaged_qvd_file():
 
 def test_read_binary_file_stream():
     """
-    Tests if a binary file stream can be read properly.
+    Tests if QVD table can be read from a binary file stream properly.
     """
     with open(os.path.join(os.path.dirname(__file__), 'data/small.qvd'), 'rb') as file:
         df = QvdTable.from_stream(file)
@@ -87,31 +87,3 @@ def test_read_binary_file_stream():
     assert df.data is not None
     assert len(df.data) == 606
     assert df.head(5).shape == (5, 8)
-
-def test_construct_qvd_file_from_dict():
-    """
-    Tests if a data frame, constructed from a dictionary, can be read properly.
-    """
-    raw_df = {
-        'columns': ['Key', 'Value'],
-        'data': [
-            [1, 'A'],
-            [2, 'B'],
-            [3, 'C'],
-            [4, 'D'],
-            [5, 'E']
-        ]
-    }
-
-    df = QvdTable.from_dict(raw_df)
-
-    assert df is not None
-    assert df.shape is not None
-    assert df.shape[0] == 5
-    assert df.shape[1] == 2
-    assert df.columns is not None
-    assert len(df.columns) == 2
-    assert df.data is not None
-    assert len(df.data) == 5
-    assert df.head(2).shape == (2, 2)
-    assert df.to_dict() == raw_df

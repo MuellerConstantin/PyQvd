@@ -406,6 +406,12 @@ class QvdTable:
         :param column: The column name.
         :return: The value at the specified row and column.
         """
+        if not isinstance(row, int):
+            raise TypeError("Row must be a valid row index.")
+
+        if not isinstance(column, str):
+            raise TypeError("Column must be a valid column name.")
+
         return self._data[row][self._columns.index(column)]
 
     def select(self, *columns: str) -> "QvdTable":
