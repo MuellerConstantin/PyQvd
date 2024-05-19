@@ -5,7 +5,7 @@ Contains classes for parsing and representing QVD files.
 import struct
 from enum import Enum
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict
+from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union
 from dataclasses import dataclass
 from tabulate import tabulate
 
@@ -341,6 +341,14 @@ class QvdTable:
         :param data: The data of the data frame.
         :param columns: The columns of the data frame.
         """
+        # Ensure all records have the same number of values
+        if len(set(len(row) for row in data)) > 1:
+            raise ValueError("All records must have the same number of values.")
+
+        # Ensure the number of columns matches the number of values in each record
+        if len(columns) != len(data[0]):
+            raise ValueError("The number of columns must match the number of values in each record.")
+
         self._data: List[List[QvdValue]] = data
         self._columns: List[str] = columns
 
@@ -371,6 +379,24 @@ class QvdTable:
         """
         return (len(self._data), len(self._columns))
 
+    @property
+    def size(self) -> int:
+        """
+        Return an int representing the number of elements in this object.
+
+        :return: The number of elements in the data frame.
+        """
+        return len(self._data) * len(self._columns)
+
+    @property
+    def empty(self) -> bool:
+        """
+        Returns whether the data frame is empty.
+
+        :return: True if the data frame is empty; otherwise, False.
+        """
+        return len(self._data) == 0
+
     def head(self, n: int = 5) -> 'QvdTable':
         """
         Returns the first n rows of the data frame.
@@ -398,9 +424,20 @@ class QvdTable:
         """
         return QvdTable([self._data[index] for index in args], self._columns)
 
+    def select(self, *columns: str) -> "QvdTable":
+        """
+        Returns a new data frame with only the specified columns.
+
+        :param columns: The column names.
+        :return: The new data frame.
+        """
+        column_indices = [self._columns.index(column) for column in columns]
+        return QvdTable([[row[index] for index in column_indices] for row in self._data], list(columns))
+
     def at(self, row: int, column: str) -> QvdValue:
         """
-        Returns the value at the specified row and column.
+        Returns the value at the specified row and column, where row refers to the
+        current nth record.
 
         :param row: The row index.
         :param column: The column name.
@@ -414,15 +451,31 @@ class QvdTable:
 
         return self._data[row][self._columns.index(column)]
 
-    def select(self, *columns: str) -> "QvdTable":
+    def get(self, key: Union[str, int]) -> List[QvdValue]:
         """
-        Returns a new data frame with only the specified columns.
+        Returns the values for the specified key. If the key is a string, the values for the
+        specified column are returned. If the key is an integer, the values for the specified
+        row are returned.
 
-        :param columns: The column names.
-        :return: The new data frame.
+        :param key: The key to retrieve.
+        :return: The values for the specified key.
         """
-        column_indices = [self._columns.index(column) for column in columns]
-        return QvdTable([[row[index] for index in column_indices] for row in self._data], list(columns))
+        if isinstance(key, str):
+            return [row[self._columns.index(key)] for row in self._data]
+
+        if isinstance(key, int):
+            return self._data[key]
+
+        raise TypeError("Key must be a supported/valid one.")
+
+    def __getitem__(self, key: Union[str, int]) -> List[QvdValue]:
+        """
+        Returns the values for the specified key. It is a shorthand for the get method.
+
+        :param key: The key to retrieve.
+        :return: The values for the specified key.
+        """
+        return self.get(key)
 
     def __str__(self) -> str:
         """
@@ -431,6 +484,18 @@ class QvdTable:
         :return: The string representation.
         """
         return tabulate(self._data, headers=self._columns)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, QvdTable):
+            return False
+
+        return self._data == other._data and self._columns == other._columns
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash((tuple(tuple(row) for row in self._data), tuple(self._columns)))
 
     def to_qvd(self, path: str):
         """
