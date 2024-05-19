@@ -3,7 +3,7 @@ Tests the functionality related to persisting files.
 """
 
 import os
-from pyqvd import QvdDataFrame
+from pyqvd import QvdTable
 
 def test_write_qvd_file(tmp_path):
     """
@@ -21,7 +21,7 @@ def test_write_qvd_file(tmp_path):
         ]
     }
 
-    df = QvdDataFrame.from_dict(raw_df)
+    df = QvdTable.from_dict(raw_df)
 
     assert df is not None
     assert df.shape is not None
@@ -38,7 +38,7 @@ def test_write_qvd_file(tmp_path):
     assert os.path.exists(str(tmp_path / 'written.qvd'))
     assert os.path.getsize(str(tmp_path / 'written.qvd')) > 0
 
-    written_df = QvdDataFrame.from_qvd(str(tmp_path / 'written.qvd'))
+    written_df = QvdTable.from_qvd(str(tmp_path / 'written.qvd'))
 
     assert written_df is not None
     assert written_df.shape is not None
@@ -71,7 +71,7 @@ def test_write_qvd_file_as_binary_file_stream(tmp_path):
         ]
     }
 
-    df = QvdDataFrame.from_dict(raw_df)
+    df = QvdTable.from_dict(raw_df)
 
     assert df is not None
     assert df.shape is not None
@@ -89,7 +89,7 @@ def test_write_qvd_file_as_binary_file_stream(tmp_path):
     assert os.path.exists(tmp_path / 'written.qvd')
     assert os.path.getsize(tmp_path / 'written.qvd') > 0
 
-    written_df = QvdDataFrame.from_qvd(str(tmp_path / 'written.qvd'))
+    written_df = QvdTable.from_qvd(str(tmp_path / 'written.qvd'))
 
     assert written_df is not None
     assert written_df.shape is not None

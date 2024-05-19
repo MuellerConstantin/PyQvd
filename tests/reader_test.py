@@ -5,14 +5,14 @@ Tests the functionality related to reading files.
 import os
 import time
 import pytest
-from pyqvd import QvdDataFrame
+from pyqvd import QvdTable
 
 def test_read_qvd_file_with_1000_rows():
     """
     Tests if a small QVD file can be parsed properly.
     """
     start = int(time.time() * 1000)
-    df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/small.qvd'))
+    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), 'data/small.qvd'))
     end = int(time.time() * 1000)
 
     assert end - start < 250
@@ -31,7 +31,7 @@ def test_read_qvd_file_with_20000_rows():
     Tests if a medium QVD file can be parsed properly.
     """
     start = int(time.time() * 1000)
-    df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/medium.qvd'))
+    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), 'data/medium.qvd'))
     end = int(time.time() * 1000)
 
     assert end - start < 2500
@@ -50,7 +50,7 @@ def test_read_qvd_file_with_60000_rows():
     Tests if a large QVD file can be parsed properly.
     """
     start = int(time.time() * 1000)
-    df = QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/large.qvd'))
+    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), 'data/large.qvd'))
     end = int(time.time() * 1000)
 
     assert end - start < 5000
@@ -69,14 +69,14 @@ def test_read_damaged_qvd_file():
     Tests if reading a damaged QVD file fails as expected.
     """
     with pytest.raises(Exception):
-        QvdDataFrame.from_qvd(os.path.join(os.path.dirname(__file__), 'data/damaged.qvd'))
+        QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), 'data/damaged.qvd'))
 
 def test_read_binary_file_stream():
     """
     Tests if a binary file stream can be read properly.
     """
     with open(os.path.join(os.path.dirname(__file__), 'data/small.qvd'), 'rb') as file:
-        df = QvdDataFrame.from_stream(file)
+        df = QvdTable.from_stream(file)
 
     assert df is not None
     assert df.shape is not None
@@ -103,7 +103,7 @@ def test_construct_qvd_file_from_dict():
         ]
     }
 
-    df = QvdDataFrame.from_dict(raw_df)
+    df = QvdTable.from_dict(raw_df)
 
     assert df is not None
     assert df.shape is not None
