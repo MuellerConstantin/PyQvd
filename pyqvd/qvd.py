@@ -86,7 +86,7 @@ class QvdTableHeader:
 
 class QvdValue(metaclass=ABCMeta):
     """
-    Represents a value in a QVD file.
+    Base class for all QVD data types.
     """
     @property
     @abstractmethod
@@ -341,14 +341,14 @@ class DualDoubleValue(QvdValue):
 
 class QvdTable:
     """
-    Represents a table in a QVD file.
+    Core class for representing a QVD data table.
     """
     def __init__(self, data: List[List[QvdValue]], columns: List[str]):
         """
-        Constructs a new QVD data frame.
+        Constructs a new QVD data table.
 
-        :param data: The data of the data frame.
-        :param columns: The columns of the data frame.
+        :param data: The data of the data table.
+        :param columns: The columns of the data table.
         """
         # Ensure all records have the same number of values
         if len(set(len(row) for row in data)) > 1:
@@ -364,7 +364,7 @@ class QvdTable:
     @property
     def data(self) -> List[List[QvdValue]]:
         """
-        Returns the data of the data frame.
+        Returns the data of the data table.
 
         :return: The data.
         """
@@ -373,7 +373,7 @@ class QvdTable:
     @property
     def columns(self) -> List[str]:
         """
-        Returns the columns of the data frame.
+        Returns the columns of the data table.
 
         :return: The column names.
         """
@@ -382,7 +382,7 @@ class QvdTable:
     @property
     def shape(self) -> Tuple[int, int]:
         """
-        Returns the shape of the data frame.
+        Returns the shape of the data table.
 
         :return: The shape, which is a tuple containing the number of rows and columns.
         """
@@ -393,22 +393,22 @@ class QvdTable:
         """
         Return an int representing the number of elements in this object.
 
-        :return: The number of elements in the data frame.
+        :return: The number of elements in the data table.
         """
         return len(self._data) * len(self._columns)
 
     @property
     def empty(self) -> bool:
         """
-        Returns whether the data frame is empty.
+        Returns whether the data table is empty.
 
-        :return: True if the data frame is empty; otherwise, False.
+        :return: True if the data table is empty; otherwise, False.
         """
         return len(self._data) == 0
 
     def head(self, n: int = 5) -> 'QvdTable':
         """
-        Returns the first n rows of the data frame.
+        Returns the first n rows of the data table.
 
         :param n: The number of rows to return.
         :return: The first n rows.
@@ -417,7 +417,7 @@ class QvdTable:
 
     def tail(self, n: int = 5) -> 'QvdTable':
         """
-        Returns the last n rows of the data frame.
+        Returns the last n rows of the data table.
 
         :param n: The number of rows to return.
         :return: The last n rows.
@@ -426,7 +426,7 @@ class QvdTable:
 
     def rows(self, *args: int) -> "QvdTable":
         """
-        Returns the specified rows of the data frame.
+        Returns the specified rows of the data table.
 
         :param args: The row indices.
         :return: The specified rows.
@@ -435,10 +435,10 @@ class QvdTable:
 
     def select(self, *columns: str) -> "QvdTable":
         """
-        Returns a new data frame with only the specified columns.
+        Returns a new data table with only the specified columns.
 
         :param columns: The column names.
-        :return: The new data frame.
+        :return: The new data table.
         """
         column_indices = [self._columns.index(column) for column in columns]
         return QvdTable([[row[index] for index in column_indices] for row in self._data], list(columns))
@@ -469,10 +469,77 @@ class QvdTable:
     # pylint: disable-next=line-too-long
     def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[QvdValue, List[QvdValue], List[List[QvdValue]]]) -> None:
         """
-        Sets the value for the specified key.
+        Sets the value for the specified key. As a shorthand, you can also use the indexing
+        operator to set values.
 
         :param key: The key to set.
         :param value: The value to set.
+
+        Examples
+        --------
+        You can pass a single integer to overwrite a row at the specified index:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.set(0, [10, 11, 12]) # Alias tbl[0] = [10, 11, 12]
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            10   11   12
+            4    5    6
+            7    8    9
+        
+        You can pass a single string to overwrite a column with the specified name:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.set("A", [13, 14, 15]) # Alias tbl["A"] = [13, 14, 15]
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            13   2    3
+            14   5    6
+            15   8    9
+
+        You can pass a tuple with an integer and a string to overwrite a value at the specified row and column:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.set((0, "A"), 16) # Alias tbl[0, "A"] = 16
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            16   2    3
+            4    5    6
+            7    8    9
+
+        You can pass a slice to overwrite a subset of the data table:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.set(slice(0, 2), 17) # Alias tbl[0:2] = 17
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            17   17   17
+            17   17   17
+            7    8    9
         """
         # Set by row and column index
         if isinstance(key, tuple):
@@ -577,10 +644,57 @@ class QvdTable:
     # pylint: disable-next=line-too-long
     def get(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
         """
-        Returns the values for the specified key.
+        Returns the values for the specified key. As a shorthand, you can also use the indexing
+        operator to get values.
 
         :param key: The key to retrieve.
         :return: The values for the specified key.
+
+        Examples
+        --------
+        You can pass a single integer to get a row at the specified index:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.get(0) # Alias tbl[0]
+            [1, 2, 3]
+        
+        You can pass a single string to get a column with the specified name:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.get("A") # Alias tbl["A"]
+            [1, 4, 7]
+        
+        You can pass a tuple with an integer and a string to get a value at the specified row and column:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.get((0, "A")) # Alias tbl[0, "A"]
+            1
+        
+        You can pass a slice to get a subset of the data table:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.get(slice(0, 2)) # Alias tbl[0:2]
+            [[1, 2, 3], [4, 5, 6]]
         """
         # Access by row and column index
         if isinstance(key, tuple):
@@ -641,7 +755,7 @@ class QvdTable:
 
     def __str__(self) -> str:
         """
-        Returns a string representation of the data frame.
+        Returns a string representation of the data table.
 
         :return: The string representation.
         """
@@ -649,7 +763,7 @@ class QvdTable:
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the data frame.
+        Returns a string representation of the data table.
 
         :return: The string representation.
         """
@@ -669,7 +783,7 @@ class QvdTable:
 
     def to_qvd(self, path: str):
         """
-        Persists the data frame to a QVD file.
+        Persists the data table to a QVD file.
 
         :param path: The path to the QVD file.
         """
@@ -691,17 +805,30 @@ class QvdTable:
 
     def to_dict(self) -> Dict[str, any]:
         """
-        Converts the data frame to a dictionary.
+        Converts the data table to a dictionary.
 
-        :return: The dictionary representation of the data frame.
+        :return: The dictionary representation of the data table.
+
+        Examples
+        --------
+        You can convert the data table to a dictionary:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.to_dict()
+            {'columns': ['A', 'B', 'C'], 'data': [[1, 2, 3], [4, 5, 6], [7, 8, 9]}
         """
         return {"columns": self._columns, "data": [[value.display_value for value in row] for row in self._data]}
 
-    def to_pandas(self) -> "pd.DataFrame":
+    def to_pandas(self) -> "pd.DataFable":
         """
-        Converts the data frame to a pandas data frame.
+        Converts the data table to a pandas data table.
 
-        :return: The pandas data frame.
+        :return: The pandas data table.
         """
         try:
             # pylint: disable=import-outside-toplevel
@@ -716,10 +843,10 @@ class QvdTable:
     @staticmethod
     def from_qvd(path: str) -> "QvdTable":
         """
-        Loads a QVD file and returns its data frame.
+        Loads a QVD file and returns its data table.
 
         :param path: The path to the QVD file.
-        :return: The data frame of the QVD file.
+        :return: The data table of the QVD file.
         """
         # pylint: disable=import-outside-toplevel
         from pyqvd.reader import QvdFileReader
@@ -729,7 +856,7 @@ class QvdTable:
     @staticmethod
     def from_stream(source: BinaryIO) -> "QvdTable":
         """
-        Constructs a new QVD data frame from a stream.
+        Constructs a new QVD data table from a binary stream.
 
         :param source: The source to the QVD file.
         """
@@ -741,10 +868,25 @@ class QvdTable:
     @staticmethod
     def from_dict(data: Dict[str, any]) -> "QvdTable":
         """
-        Constructs a new QVD data frame from a raw value dictionary.
+        Constructs a new QVD data table from a raw value dictionary.
 
-        :param data: The dictionary representation of the data frame.
-        :return: The QVD data frame.
+        :param data: The dictionary representation of the data table.
+        :return: The QVD data table.
+
+        Examples
+        --------
+        You can construct a data table from a dictionary:
+
+            >>> tbl = QvdTable.from_dict({
+            ...     "columns": ["A", "B", "C"],
+            ...     "data": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+            ... })
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
         """
         def _get_symbol_from_value(value: any) -> QvdValue:
             if value is None:
@@ -766,10 +908,10 @@ class QvdTable:
     @staticmethod
     def from_pandas(df: "pd.DataFrame") -> "QvdTable":
         """
-        Constructs a new QVD data frame from a pandas data frame.
+        Constructs a new QVD data table from a pandas data frame.
 
         :param df: The pandas data frame.
-        :return: The QVD data frame.
+        :return: The QVD data table.
         """
         try:
             # pylint: disable=import-outside-toplevel

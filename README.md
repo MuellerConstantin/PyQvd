@@ -14,21 +14,6 @@ structure or vice versa.
   - [XML Header](#xml-header)
   - [Symbol Table](#symbol-table)
   - [Index Table](#index-table)
-- [API Documentation](#api-documentation)
-  - [QvdDataFrame](#qvddataframe)
-    - [`@staticmethod from_qvd(path: str) -> QvdDataFrame`](#staticmethod-from_qvdpath-str---qvddataframe)
-    - [`@staticmethod from_stream(source: BinaryIO) -> QvdDataFrame`](#staticmethod-from_streamsource-binaryio---qvddataframe)
-    - [`@staticmethod from_dict(data: Dict[str, List[any]]) -> QvdDataFrame`](#staticmethod-from_dictdata-dictstr-listany---qvddataframe)
-    - [`@staticmethod from_pandas(data: pandas.DataFrame) -> QvdDataFrame`](#staticmethod-from_pandasdata-pandasdataframe---qvddataframe)
-    - [`head(n: int) -> QvdDataFrame`](#headn-int---qvddataframe)
-    - [`tail(n: int) -> QvdDataFrame`](#tailn-int---qvddataframe)
-    - [`select(*args: str) -> QvdDataFrame`](#selectargs-str---qvddataframe)
-    - [`rows(*args: int) -> QvdDataFrame`](#rowsargs-int---qvddataframe)
-    - [`at(row: int, column: str) -> any`](#atrow-int-column-str---any)
-    - [`to_dict() -> Dict[str, List[any]]`](#to_dict---dictstr-listany)
-    - [`to_qvd(path: str) -> None`](#to_qvdpath-str---none)
-    - [`to_stream(target: BinaryIO) -> None`](#to_streamtarget-binaryio---none)
-    - [`to_pandas() -> pandas.DataFrame`](#to_pandas---pandasdataframe)
 - [License](#license)
   - [Forbidden](#forbidden)
 
@@ -36,12 +21,14 @@ structure or vice versa.
 
 ## Install
 
-_PyQvd_ is a Python library available through [pypi](https://pypi.org/). The recommended way to install and maintain _PyQvd_ as a dependency is through the package installer (PIP). Before installing this library, download and install Python.
+PyQvd is a Python library available through [pypi](https://pypi.org/). The recommended way to
+install and maintain PyQvd as a dependency is through the package installer (PIP). Before
+installing this library, download and install Python.
 
-You can get _PyQvd_ using the following command:
+To use PyQvd, first install it using pip:
 
 ```bash
-pip install PyQvd
+(.venv) $ pip install PyQvd
 ```
 
 ## Usage
@@ -49,23 +36,26 @@ pip install PyQvd
 Below is a quick example how to use _PyQvd_.
 
 ```python
-from pyqvd import QvdDataFrame
+from pyqvd import QvdTable
 
-df = QvdDataFrame.from_qvd('sample.qvd')
-print(df.head(5))
+df = QvdTable.from_qvd("path/to/file.qvd")
+print(df.head())
 ```
 
-The above example loads the _PyQvd_ library and parses an example QVD file. A QVD file is typically loaded using the static
-`QvdDataFrame.from_qvd` function of the `QvdDataFrame` class itself. After loading the file's content, numerous methods and properties are available to work with the parsed data.
+The above example loads the _PyQvd_ library and parses an example QVD file. A QVD file is typically
+loaded using the static `QvdTable.from_qvd` function of the `QvdTable` class itself. After loading
+the file's content, numerous methods and properties are available to work with the parsed data.
 
 ## QVD File Format
 
-The QVD file format is a binary file format that is used by QlikView to store data. The format is proprietary. However,
-the format is well documented and can be parsed without the need of a QlikView installation. In fact, a QVD file consists
-of three parts: a XML header, and two binary parts, the symbol and the index table. The XML header contains meta information
-about the QVD file, such as the number of data records and the names of the fields. The symbol table contains the actual
-distinct values of the fields. The index table contains the actual data records. The index table is a list of indices
-which point to values in the symbol table.
+The *Qlik View Data (QVD)* file format is a binary file format that is used by QlikView, and
+later Qlik Sense, to store data. The format is proprietary and contains one data table per file.
+However, the format is well structured and can be parsed without the need of a QlikView/Qlik Sense
+installation using this library. In fact, a QVD file consists of three parts: a XML header, and two
+binary parts, the symbol and the index table. The XML header contains meta information about the
+data table stored in the QVD file, such as the number of data records and the names of the fields.
+The symbol table contains the actual distinct values for each field and the index table contains the
+actual data records, consisting of references to the symbol table.
 
 ### XML Header
 
@@ -75,90 +65,37 @@ and the data types of the fields.
 
 ### Symbol Table
 
-The symbol table contains the distinct/unique values of the fields and is located directly after the XML header. The order
-of columns in the symbol table corresponds to the order of the fields in the XML header. The length and offset of the
-symbol sections of each column are also stored in the XML header. Each symbol section consist of the unique symbols of the
-respective column. The type of a single symbol is determined by a type byte prefixed to the respective symbol value. The
-following type of symbols are supported:
+The symbol table contains the actual distinct values for each field. The symbol table is a binary
+table that is stored in the QVD file after the XML header. The symbol table is stored in a column-major
+format, meaning that the values of each field are stored in a contiguous block of memory.
+
+In general, QlikView/Qlik Sense can handle multiple data types, such as text strings, numbers, dates,
+times, timestamps, and currencies. But on memory level, a QVD file knows only the following five
+different data types. The data types stored in the QVD file are interpreted by the QlikView/Qlik Sense
+application when loading the data with the help of additional meta information stored in the XML header.
+This allows to store a date for example as a plain number in the QVD file, but to interpret it as a date
+when loading the data into QlikView/Qlik Sense.
 
 | Code | Type         | Description                                                                                   |
 | ---- | ------------ | --------------------------------------------------------------------------------------------- |
 | 1    | Integer      | signed 4-byte integer (little endian)                                                         |
-| 2    | Float        | signed 8-byte IEEE floating point number (little endian)                                      |
+| 2    | Double       | signed 8-byte IEEE floating point number (little endian)                                      |
 | 4    | String       | null terminated string                                                                        |
 | 5    | Dual Integer | signed 4-byte integer (little endian) followed by a null terminated string                    |
-| 6    | Dual Float   | signed 8-byte IEEE floating point number (little endian) followed by a null terminated string |
+| 6    | Dual Double  | signed 8-byte IEEE floating point number (little endian) followed by a null terminated string |
+
+Basically, the symbol table is a memory block that contains the distinct values of each field. The order
+of the fields in the symbol table is the same as in the XML header. Each single value is prefixed with
+a type byte that indicates the data type of the value itself.
 
 ### Index Table
 
-After the symbol table, the index table follows. The index table contains the actual data records. The index table contains
-binary indices that refrences to the values of each row in the symbol table. The order of the columns in the index table
-corresponds to the order of the fields in the XML header. Hence, the index table does not contain the actual values of a
-data record, but only the indices that point to the values in the symbol table.
-
-## API Documentation
-
-### QvdDataFrame
-
-The `QvdDataFrame` class represents the data frame stored inside of a finally parsed QVD file. It provides a high-level abstraction access to the QVD file content. This includes meta information as well as access to the actual data records.
-
-| Property  | Type              | Description                                                                                 |
-| --------- | ----------------- | ------------------------------------------------------------------------------------------- |
-| `shape`   | `tuple[int, int]` | The shape of the data frame. First value is number of rows, second value number of columns. |
-| `data`    | `list[list[any]]` | The actual data. The first dimension represents the single rows.                            |
-| `columns` | `list[str]`       | The names of the fields that are contained in the QVD file.                                 |
-
-#### `@staticmethod from_qvd(path: str) -> QvdDataFrame`
-
-The static method `QvdDataFrame.from_qvd` loads a QVD file from the given path and parses it. The method returns a `QvdDataFrame` instance.
-
-#### `@staticmethod from_stream(source: BinaryIO) -> QvdDataFrame`
-
-The static method `QvdDataFrame.from_stream` loads a QVD file from the given binary stream. The method returns a `QvdDataFrame` instance.
-
-#### `@staticmethod from_dict(data: Dict[str, List[any]]) -> QvdDataFrame`
-
-The static method `QvdDataFrame.from_dict` constructs a data frame from a dictionary. The dictionary must contain the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
-
-#### `@staticmethod from_pandas(data: pandas.DataFrame) -> QvdDataFrame`
-
-The static method `QvdDataFrame.from_pandas` constructs a data frame from a pandas data frame.
-
-#### `head(n: int) -> QvdDataFrame`
-
-The method `head` returns the first `n` rows of the data frame.
-
-#### `tail(n: int) -> QvdDataFrame`
-
-The method `tail` returns the last `n` rows of the data frame.
-
-#### `select(*args: str) -> QvdDataFrame`
-
-The method `select` returns a new data frame that contains only the specified columns.
-
-#### `rows(*args: int) -> QvdDataFrame`
-
-The method `rows` returns a new data frame that contains only the specified rows.
-
-#### `at(row: int, column: str) -> any`
-
-The method `at` returns the value at the specified row and column.
-
-#### `to_dict() -> Dict[str, List[any]]`
-
-The method `to_dict` returns the data frame as a dictionary. The dictionary contains the columns and the actual data as properties. The columns property is an array of strings that contains the names of the fields in the QVD file. The data property is an array of arrays that contains the actual data records. The order of the values in the inner arrays corresponds to the order of the fields in the QVD file.
-
-#### `to_qvd(path: str) -> None`
-
-The method `to_qvd` writes the data frame to a QVD file at the specified path.
-
-#### `to_stream(target: BinaryIO) -> None`
-
-The method `to_stream` writes the data frame as a QVD file to a binary stream.
-
-#### `to_pandas() -> pandas.DataFrame`
-
-The method `to_pandas` returns the data frame as a pandas data frame.
+The index table contains the actual data records, consisting of references to the symbol table. This means
+that the index table does not contain the actual cell values, but a reference to the cell's value in the
+symbol table. The index table is a binary table that is stored in the QVD file after the symbol table.
+It is stored in a row-major format, meaning that the values of each record are stored in a contiguous block
+of memory. To save memory, the indices of a record are stored with a bit mask instead of whole bytes per index.
+Meta information about the bit mask is stored in the XML header.
 
 ## License
 
