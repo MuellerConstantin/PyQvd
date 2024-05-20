@@ -162,6 +162,47 @@ def test_qvd_table_constuct_directly_with_invalid_shape():
             ]
         )
 
+def test_qvd_table_get_by_tuple():
+    """
+    Tests the functionality of getting a cell from a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    value = df.get((0, 'Key'))
+
+    assert value is not None
+    assert value.display_value == 1
+
+def test_qvd_table_get_by_invalid_tuple():
+    """
+    Tests the functionality of getting an invalid cell from a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(IndexError):
+        df.get((5, 'Key'))
+
 def test_qvd_table_get_by_column():
     """
     Tests the functionality of getting a column from a QVD table.
@@ -275,6 +316,27 @@ def test_qvd_table_get_by_slice():
     assert values[0][1].display_value == 'A'
     assert values[1][0].display_value == 2
     assert values[1][1].display_value == 'B'
+
+def test_qvd_table_getitem_by_tuple():
+    """
+    Tests the functionality of getting a cell from a QVD table using the getitem method.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    value = df[0, 'Key']
+
+    assert value is not None
+    assert value.display_value == 1
 
 def test_qvd_table_getitem_by_column():
     """

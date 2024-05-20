@@ -466,13 +466,34 @@ class QvdTable:
 
         return self._data[row][self._columns.index(column)]
 
-    def set(self, key: Union[str, int, slice], value: Union[QvdValue, List[QvdValue]]) -> None:
+    # pylint: disable-next=line-too-long
+    def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[QvdValue, List[QvdValue], List[List[QvdValue]]]) -> None:
         """
         Sets the value for the specified key.
 
         :param key: The key to set.
         :param value: The value to set.
         """
+        # Set by row and column index
+        if isinstance(key, tuple):
+            if not isinstance(value, QvdValue):
+                raise ValueError("Value must be a QVD value.")
+
+            if not isinstance(key[0], int):
+                raise TypeError("Row must be a valid row index.")
+
+            if not isinstance(key[1], str):
+                raise TypeError("Column must be a valid column name.")
+
+            if key[0] < 0 or key[0] >= len(self._data):
+                raise IndexError("Row index out of range")
+
+            if key[1] not in self._columns:
+                raise KeyError(f"Column '{key[1]}' not found")
+
+            self._data[key[0]][self._columns.index(key[1])] = value
+            return
+
         # Set by column name
         if isinstance(key, str):
             if key not in self._columns:
@@ -553,13 +574,30 @@ class QvdTable:
 
         raise TypeError("Key must be a supported/valid one.")
 
-    def get(self, key: Union[str, int, slice]) -> Union[List[QvdValue], List[List[QvdValue]]]:
+    # pylint: disable-next=line-too-long
+    def get(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
         """
         Returns the values for the specified key.
 
         :param key: The key to retrieve.
         :return: The values for the specified key.
         """
+        # Access by row and column index
+        if isinstance(key, tuple):
+            if not isinstance(key[0], int):
+                raise TypeError("Row must be a valid row index.")
+
+            if not isinstance(key[1], str):
+                raise TypeError("Column must be a valid column name.")
+
+            if key[0] < 0 or key[0] >= len(self._data):
+                raise IndexError("Row index out of range")
+
+            if key[1] not in self._columns:
+                raise KeyError(f"Column '{key[1]}' not found")
+
+            return self._data[key[0]][self._columns.index(key[1])]
+
         # Access by column name
         if isinstance(key, str):
             if key not in self._columns:
@@ -581,7 +619,8 @@ class QvdTable:
 
         raise TypeError("Key must be a supported/valid one.")
 
-    def __getitem__(self, key: Union[str, int, slice]) -> Union[List[QvdValue], List[List[QvdValue]]]:
+    # pylint: disable-next=line-too-long
+    def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
         """
         Returns the values for the specified key. It is a shorthand for the get method.
 
@@ -590,7 +629,8 @@ class QvdTable:
         """
         return self.get(key)
 
-    def __setitem__(self, key: Union[str, int, slice], value: Union[QvdValue, List[QvdValue]]) -> None:
+    # pylint: disable-next=line-too-long
+    def __setitem__(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[QvdValue, List[QvdValue], List[List[QvdValue]]]) -> None:
         """
         Sets the value for the specified key. It is a shorthand for the set method.
 
