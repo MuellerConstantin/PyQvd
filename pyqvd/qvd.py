@@ -458,13 +458,104 @@ class QvdTable:
         if not isinstance(column, str):
             raise TypeError("Column must be a valid column name.")
 
+        if row < 0 or row >= len(self._data):
+            raise IndexError("Row index out of range")
+
+        if column not in self._columns:
+            raise KeyError(f"Column '{column}' not found")
+
         return self._data[row][self._columns.index(column)]
+
+    def set(self, key: Union[str, int, slice], value: Union[QvdValue, List[QvdValue]]) -> None:
+        """
+        Sets the value for the specified key.
+
+        :param key: The key to set.
+        :param value: The value to set.
+        """
+        # Set by column name
+        if isinstance(key, str):
+            if key not in self._columns:
+                raise KeyError(f"Column '{key}' not found")
+
+            if not isinstance(value, list) or not all(isinstance(item, QvdValue) for item in value):
+                raise ValueError("Value must be a list of QVD values.")
+
+            if len(value) != len(self._data):
+                raise ValueError("Value must have the same number of elements as the table.")
+
+            column_index = self._columns.index(key)
+            for row_index, row in enumerate(self._data):
+                row[column_index] = value[row_index]
+
+            return
+
+        # Set by row index
+        if isinstance(key, int):
+            if key < 0 or key >= len(self._data):
+                raise IndexError("Row index out of range")
+
+            if not isinstance(value, list) or not all(isinstance(item, QvdValue) for item in value):
+                raise ValueError("Value must be a list of QVD values.")
+
+            if len(value) != len(self._columns):
+                raise ValueError("Value must have the same number of elements as the table has columns.")
+
+            self._data[key] = value
+            return
+
+        # Set by slice
+        if isinstance(key, slice):
+            is_valid_scalar = isinstance(value, QvdValue)
+
+            is_valid_vector = (isinstance(value, list) and
+                               all(isinstance(item, QvdValue) for item in value))
+
+            is_valid_matrix = (isinstance(value, list) and
+                               all(isinstance(sublist, list) and
+                                   all(isinstance(item, QvdValue) for item in sublist) for sublist in value))
+
+            if not is_valid_scalar and not is_valid_vector and not is_valid_matrix:
+                raise ValueError("Value must be a valid scalar, vector, or matrix of QVD values.")
+
+            # Replace all values in the slice with the same value
+            if is_valid_scalar:
+                for row in self._data[key]:
+                    for index, _ in enumerate(row):
+                        row[index] = value
+
+                return
+
+            # Replace all selected rows with the given vector
+            if is_valid_vector:
+                if len(value) != len(self._data[key]):
+                    raise ValueError("Value must have the same number of elements as the table has columns.")
+
+                for row in self._data[key]:
+                    for index, _ in enumerate(row):
+                        row[index] = value[index]
+
+                return
+
+            # Replace all selected rows and columns with the given matrix
+            if is_valid_matrix:
+                if len(value) != len(self._data[key]):
+                    raise ValueError("Value must have the same number of elements as the slice has rows.")
+
+                for row_index, row in enumerate(self._data[key]):
+                    if len(value[row_index]) != len(row):
+                        raise ValueError("Value must have the same number of elements as the table has columns.")
+
+                    for index, _ in enumerate(row):
+                        row[index] = value[row_index][index]
+
+                return
+
+        raise TypeError("Key must be a supported/valid one.")
 
     def get(self, key: Union[str, int, slice]) -> Union[List[QvdValue], List[List[QvdValue]]]:
         """
-        Returns the values for the specified key. If the key is a string, the values for the
-        specified column are returned. If the key is an integer, the values for the specified
-        row are returned.
+        Returns the values for the specified key.
 
         :param key: The key to retrieve.
         :return: The values for the specified key.
@@ -498,6 +589,15 @@ class QvdTable:
         :return: The values for the specified key.
         """
         return self.get(key)
+
+    def __setitem__(self, key: Union[str, int, slice], value: Union[QvdValue, List[QvdValue]]) -> None:
+        """
+        Sets the value for the specified key. It is a shorthand for the set method.
+
+        :param key: The key to set.
+        :param value: The value to set.
+        """
+        self.set(key, value)
 
     def __str__(self) -> str:
         """

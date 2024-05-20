@@ -350,6 +350,263 @@ def test_qvd_table_getitem_by_slice():
     assert values[1][0].display_value == 2
     assert values[1][1].display_value == 'B'
 
+def test_qvd_table_set_by_column():
+    """
+    Tests the functionality of setting a column in a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    df.set('Key', [IntegerValue(6), IntegerValue(7), IntegerValue(8), IntegerValue(9), IntegerValue(10)])
+
+    assert df.at(0, 'Key').display_value == 6
+    assert df.at(1, 'Key').display_value == 7
+    assert df.at(2, 'Key').display_value == 8
+    assert df.at(3, 'Key').display_value == 9
+    assert df.at(4, 'Key').display_value == 10
+
+def test_qvd_table_set_by_invalid_column():
+    """
+    Tests the functionality of setting an invalid column in a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(KeyError):
+        df.set('Invalid', [IntegerValue(6), IntegerValue(7), IntegerValue(8), IntegerValue(9), IntegerValue(10)])
+
+def test_qvd_table_set_by_column_with_invalid_shape():
+    """
+    Tests the functionality of setting a column in a QVD table with invalid data raises an exception.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(ValueError):
+        df.set('Key', [IntegerValue(6), IntegerValue(7), IntegerValue(8)])
+
+def test_qvd_table_set_by_row():
+    """
+    Tests the functionality of setting a row in a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    df.set(0, [IntegerValue(6), StringValue('F')])
+
+    assert df.at(0, 'Key').display_value == 6
+    assert df.at(0, 'Value').display_value == 'F'
+
+def test_qvd_table_set_by_invalid_row():
+    """
+    Tests the functionality of setting an invalid row in a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(IndexError):
+        df.set(5, [IntegerValue(6), StringValue('F')])
+
+def test_qvd_table_set_by_row_with_invalid_shape():
+    """
+    Tests the functionality of setting a row in a QVD table with invalid data raises an exception.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(ValueError):
+        df.set(0, [IntegerValue(6)])
+
+def test_qvd_table_set_by_slice():
+    """
+    Tests the functionality of setting a slice in a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    new_data = [
+        [IntegerValue(6), StringValue('F')],
+        [IntegerValue(7), StringValue('G')],
+        [IntegerValue(8), StringValue('H')]
+    ]
+
+    df = QvdTable.from_dict(raw_df)
+    df.set(slice(1, 4), new_data)
+
+    assert df.at(1, 'Key').display_value == 6
+    assert df.at(1, 'Value').display_value == 'F'
+    assert df.at(2, 'Key').display_value == 7
+    assert df.at(2, 'Value').display_value == 'G'
+    assert df.at(3, 'Key').display_value == 8
+    assert df.at(3, 'Value').display_value == 'H'
+
+def test_qvd_table_set_by_slice_with_invalid_shape():
+    """
+    Tests the functionality of setting a slice in a QVD table with invalid data raises an exception.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    new_data = [
+        [IntegerValue(6), StringValue('F')],
+        [IntegerValue(7), StringValue('G')]
+    ]
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(ValueError):
+        df.set(slice(1, 4), new_data)
+
+def test_qvd_table_setitem_by_column():
+    """
+    Tests the functionality of setting a column in a QVD table using the setitem method.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    df['Key'] = [IntegerValue(6), IntegerValue(7), IntegerValue(8), IntegerValue(9), IntegerValue(10)]
+
+    assert df.at(0, 'Key').display_value == 6
+    assert df.at(1, 'Key').display_value == 7
+    assert df.at(2, 'Key').display_value == 8
+    assert df.at(3, 'Key').display_value == 9
+    assert df.at(4, 'Key').display_value == 10
+
+def test_qvd_table_setitem_by_row():
+    """
+    Tests the functionality of setting a row in a QVD table using the setitem method.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    df[0] = [IntegerValue(6), StringValue('F')]
+
+    assert df.at(0, 'Key').display_value == 6
+    assert df.at(0, 'Value').display_value == 'F'
+
+def test_qvd_table_setitem_by_slice():
+    """
+    Tests the functionality of setting a slice in a QVD table using the setitem method.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    new_data = [
+        [IntegerValue(6), StringValue('F')],
+        [IntegerValue(7), StringValue('G')],
+        [IntegerValue(8), StringValue('H')]
+    ]
+
+    df = QvdTable.from_dict(raw_df)
+    df[1:4] = new_data
+
+    assert df.at(1, 'Key').display_value == 6
+    assert df.at(1, 'Value').display_value == 'F'
+    assert df.at(2, 'Key').display_value == 7
+    assert df.at(2, 'Value').display_value == 'G'
+    assert df.at(3, 'Key').display_value == 8
+    assert df.at(3, 'Value').display_value == 'H'
+
 def test_qvd_table_at():
     """
     Tests the at functionality of a QVD table.
