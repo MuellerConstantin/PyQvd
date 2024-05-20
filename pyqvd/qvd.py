@@ -118,7 +118,6 @@ class QvdValue(metaclass=ABCMeta):
         :return: The byte representation.
         """
 
-    @abstractmethod
     def __eq__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is equal to another object.
@@ -126,6 +125,10 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if the objects are equal; otherwise, False.
         """
+        if not isinstance(__value, QvdValue):
+            return False
+
+        return self.calculation_value == __value.calculation_value
 
     def __ne__(self, __value: object) -> bool:
         """
@@ -136,13 +139,61 @@ class QvdValue(metaclass=ABCMeta):
         """
         return not self.__eq__(__value)
 
-    @abstractmethod
+    def __lt__(self, __value: object) -> bool:
+        """
+        Determines whether this QVD value is less than another object.
+
+        :param __value: The other object.
+        :return: True if this value is less than the other object; otherwise, False.
+        """
+        if not isinstance(__value, QvdValue):
+            return NotImplemented
+
+        return self.calculation_value < __value.calculation_value
+
+    def __le__(self, __value: object) -> bool:
+        """
+        Determines whether this QVD value is less than or equal to another object.
+
+        :param __value: The other object.
+        :return: True if this value is less than or equal to the other object; otherwise, False.
+        """
+        if not isinstance(__value, QvdValue):
+            return NotImplemented
+
+        return self.calculation_value <= __value.calculation_value
+
+    def __gt__(self, __value: object) -> bool:
+        """
+        Determines whether this QVD value is greater than another object.
+
+        :param __value: The other object.
+        :return: True if this value is greater than the other object; otherwise, False.
+        """
+        if not isinstance(__value, QvdValue):
+            return NotImplemented
+
+        return self.calculation_value > __value.calculation_value
+
+    def __ge__(self, __value: object) -> bool:
+        """
+        Determines whether this QVD value is greater than or equal to another object.
+
+        :param __value: The other object.
+        :return: True if this value is greater than or equal to the other object; otherwise, False.
+        """
+        if not isinstance(__value, QvdValue):
+            return NotImplemented
+
+        return self.calculation_value >= __value.calculation_value
+
     def __hash__(self) -> int:
         """
         Returns the hash value of this QVD value.
 
         :return: The hash value.
         """
+        return hash(self.calculation_value)
 
     def __str__(self) -> str:
         """
@@ -151,6 +202,14 @@ class QvdValue(metaclass=ABCMeta):
         :return: The string representation.
         """
         return str(self.display_value)
+
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of this QVD value.
+
+        :return: The string representation.
+        """
+        return self.__str__()
 
 class IntegerValue(QvdValue):
     """
@@ -176,15 +235,6 @@ class IntegerValue(QvdValue):
     def byte_representation(self) -> bytes:
         return b"\01" + self._value.to_bytes(4, byteorder="little", signed=True)
 
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, IntegerValue):
-            return False
-
-        return self._value == __value._value
-
-    def __hash__(self) -> int:
-        return hash(self._value)
-
 class DoubleValue(QvdValue):
     """
     Represents a double value in a QVD file.
@@ -209,15 +259,6 @@ class DoubleValue(QvdValue):
     def byte_representation(self) -> bytes:
         return b"\02" + struct.pack("<d", self._value)
 
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, DoubleValue):
-            return False
-
-        return self._value == __value._value
-
-    def __hash__(self) -> int:
-        return hash(self._value)
-
 class StringValue(QvdValue):
     """
     Represents a string value in a QVD file.
@@ -241,15 +282,6 @@ class StringValue(QvdValue):
     @property
     def byte_representation(self) -> bytes:
         return b"\04" + str.encode(self._value, encoding="utf-8") + b"\0"
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, StringValue):
-            return False
-
-        return self._value == __value._value
-
-    def __hash__(self) -> int:
-        return hash(self._value)
 
 class DualIntegerValue(QvdValue):
     """
@@ -280,19 +312,6 @@ class DualIntegerValue(QvdValue):
                 str.encode(self._string_value, encoding="utf-8") +
                 b"\0")
 
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, DualIntegerValue):
-            return False
-
-        return (self._int_value == __value._int_value and
-                self._string_value == __value._string_value)
-
-    def __hash__(self) -> int:
-        return hash((self._int_value, self._string_value))
-
-    def __str__(self) -> str:
-        return self._string_value
-
 class DualDoubleValue(QvdValue):
     """
     Represents a dual value with a double value and a string value in a QVD file.
@@ -319,16 +338,6 @@ class DualDoubleValue(QvdValue):
     def byte_representation(self) -> bytes:
         return (b"\06" + struct.pack("<d", self._double_value) +
                 str.encode(self._string_value, encoding="utf-8") + b"\0")
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, DualDoubleValue):
-            return False
-
-        return (self._double_value == __value._double_value and
-                self._string_value == __value._string_value)
-
-    def __hash__(self) -> int:
-        return hash((self._double_value, self._string_value))
 
 class QvdTable:
     """
@@ -451,7 +460,7 @@ class QvdTable:
 
         return self._data[row][self._columns.index(column)]
 
-    def get(self, key: Union[str, int]) -> List[QvdValue]:
+    def get(self, key: Union[str, int, slice]) -> Union[List[QvdValue], List[List[QvdValue]]]:
         """
         Returns the values for the specified key. If the key is a string, the values for the
         specified column are returned. If the key is an integer, the values for the specified
@@ -460,15 +469,28 @@ class QvdTable:
         :param key: The key to retrieve.
         :return: The values for the specified key.
         """
+        # Access by column name
         if isinstance(key, str):
-            return [row[self._columns.index(key)] for row in self._data]
+            if key not in self._columns:
+                raise KeyError(f"Column '{key}' not found")
 
+            column_index = self._columns.index(key)
+            return [row[column_index] for row in self._data]
+
+        # Access by row index
         if isinstance(key, int):
+            if key < 0 or key >= len(self._data):
+                raise IndexError("Row index out of range")
+
+            return self._data[key]
+
+        # Access by slice
+        if isinstance(key, slice):
             return self._data[key]
 
         raise TypeError("Key must be a supported/valid one.")
 
-    def __getitem__(self, key: Union[str, int]) -> List[QvdValue]:
+    def __getitem__(self, key: Union[str, int, slice]) -> Union[List[QvdValue], List[List[QvdValue]]]:
         """
         Returns the values for the specified key. It is a shorthand for the get method.
 
@@ -484,6 +506,14 @@ class QvdTable:
         :return: The string representation.
         """
         return tabulate(self._data, headers=self._columns)
+
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the data frame.
+
+        :return: The string representation.
+        """
+        return self.__str__()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, QvdTable):
@@ -541,7 +571,7 @@ class QvdTable:
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
 
-        return pd.DataFrame([[value.display_value for value in row] for row in self._data], columns=self._columns)
+        return pd.DataFrame([[value.calculation_value for value in row] for row in self._data], columns=self._columns)
 
     @staticmethod
     def from_qvd(path: str) -> "QvdTable":

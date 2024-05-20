@@ -2,12 +2,28 @@
 Tests the functionality related to reading files.
 """
 
-import pytest
 from typing import TYPE_CHECKING
+import pytest
 from pyqvd import QvdTable, IntegerValue, StringValue
 
 if TYPE_CHECKING:
     import pandas as pd
+
+def test_qvd_value_comparison():
+    """
+    Tests the comparison of two QVD values.
+    """
+    x1 = IntegerValue(1)
+    x2 = IntegerValue(1)
+    x3 = IntegerValue(2)
+
+    assert x1 < x3
+    assert x1 <= x3
+    assert x3 > x1
+    assert x3 >= x1
+    assert x1 == x2
+    assert x1 <= x2
+    assert x1 >= x2
 
 def test_construct_qvd_table_from_dict():
     """
@@ -146,7 +162,7 @@ def test_qvd_table_constuct_directly_with_invalid_shape():
             ]
         )
 
-def test_qvd_table_get_column():
+def test_qvd_table_get_by_column():
     """
     Tests the functionality of getting a column from a QVD table.
     """
@@ -172,7 +188,27 @@ def test_qvd_table_get_column():
     assert values[3].display_value == 4
     assert values[4].display_value == 5
 
-def test_qvd_table_get_row():
+def test_qvd_table_get_by_invalid_column():
+    """
+    Tests the functionality of getting an invalid column from a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(KeyError):
+        df.get('Invalid')
+
+def test_qvd_table_get_by_row():
     """
     Tests the functionality of getting a row from a QVD table.
     """
@@ -194,6 +230,51 @@ def test_qvd_table_get_row():
     assert len(values) == 2
     assert values[0].display_value == 1
     assert values[1].display_value == 'A'
+
+def test_qvd_table_get_by_invalid_row():
+    """
+    Tests the functionality of getting an invalid row from a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    with pytest.raises(IndexError):
+        df.get(5)
+
+def test_qvd_table_get_by_slice():
+    """
+    Tests the functionality of getting a slice from a QVD table.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    values = df.get(slice(0, 2))
+
+    assert values is not None
+    assert len(values) == 2
+    assert values[0][0].display_value == 1
+    assert values[0][1].display_value == 'A'
+    assert values[1][0].display_value == 2
+    assert values[1][1].display_value == 'B'
 
 def test_qvd_table_getitem_by_column():
     """
@@ -243,6 +324,31 @@ def test_qvd_table_getitem_by_row():
     assert len(values) == 2
     assert values[0].display_value == 1
     assert values[1].display_value == 'A'
+
+def test_qvd_table_getitem_by_slice():
+    """
+    Tests the functionality of getting a slice from a QVD table using the getitem method.
+    """
+    raw_df = {
+        'columns': ['Key', 'Value'],
+        'data': [
+            [1, 'A'],
+            [2, 'B'],
+            [3, 'C'],
+            [4, 'D'],
+            [5, 'E']
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    values = df[0:2]
+
+    assert values is not None
+    assert len(values) == 2
+    assert values[0][0].display_value == 1
+    assert values[0][1].display_value == 'A'
+    assert values[1][0].display_value == 2
+    assert values[1][1].display_value == 'B'
 
 def test_qvd_table_at():
     """
