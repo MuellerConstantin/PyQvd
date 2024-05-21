@@ -1,7 +1,5 @@
 """
-Package contains the logic for dealing with QVD files.
+Root package of the PyQVD library. Contains the main classes and functions to read and write QVD files.
 """
 
-from .qvd import *
-from .reader import *
-from .writer import *
+from .qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue)

@@ -1,5 +1,5 @@
 """
-Contains classes for parsing and representing QVD files.
+Module for reading QVD files into memory. Contains the required logic to parse the binary data of a QVD file.
 """
 
 import struct
@@ -12,11 +12,12 @@ from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValu
 
 class QvdFileReader:
     """
-    Parses a QVD file and loads it into memory.
+    Class for reading QVD files into memory. Parses the binary data of a QVD file and converts it into a
+    :class:`.QvdTable` object.
     """
     def __init__(self, source: Union[str, BinaryIO]):
         """
-        Constructs a new QVD file parser.
+        Constructs a new QVD file parser. The source can be either a file path or a BinaryIO object.
 
         :param source: The source to the QVD file.
         """
@@ -216,7 +217,7 @@ class QvdFileReader:
 
     def read(self) -> QvdTable:
         """
-        Reads the QVD file and returns its data as a data frame.
+        Reads the QVD file and returns its data as a :class:`.QvdTable` object.
 
         :return: The data table.
         """
@@ -248,6 +249,9 @@ class QvdFileReader:
     def _convert_bits_to_int32(bits: List[int]) -> int:
         """
         Converts a list of bits to an integer.
+
+        :param bits: The list of bits.
+        :return: The integer value.
         """
         if len(bits) == 0:
             return 0

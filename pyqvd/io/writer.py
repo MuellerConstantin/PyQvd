@@ -1,5 +1,5 @@
 """
-Contains classes for parsing and representing QVD files.
+Module for writing QVD files to disk. Contains the required classes and functions to persist QVD files.
 """
 
 import uuid
@@ -12,11 +12,11 @@ from pyqvd.qvd import QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, Number
 
 class QvdFileWriter:
     """
-    Persists a QVD file to disk.
+    Class allows to write a :class:`QvdTable` as a QVD file to disk.
     """
     def __init__(self, target: Union[str, BinaryIO], table: QvdTable):
         """
-        Constructs a new QVD file writer.
+        Constructs a new QVD file writer. The target can be either a file path or a BinaryIO object.
 
         :param target: The destination to which the Qvd file should be written.
         :param table: The data to persist.
@@ -344,7 +344,7 @@ class QvdFileWriter:
 
     def write(self):
         """
-        Writes the data to the QVD file.
+        Writes the :class:`QvdTable` object as a QVD file to the target destination.
         """
         self._build_symbol_table()
         self._build_index_table()

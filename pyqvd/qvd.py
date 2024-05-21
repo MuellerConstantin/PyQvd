@@ -1,5 +1,6 @@
 """
-Contains classes for parsing and representing QVD files.
+Module contains the core classes and functions for dealing with QVD files. The main class is the
+:class:`QvdTable` class, which represents a the internal data table of a QVD file.
 """
 
 import struct
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 class FieldType(Enum):
     """
-    Represents the type of a field in a QVD file.
+    The possible field types of a column in a QVD file.
     """
     UNKNOWN = 'UNKNOWN'
     ASCII = 'ASCII'
@@ -41,7 +42,7 @@ class NumberFormat:
 @dataclass
 class QvdFieldHeader:
     """
-    Represents the header of a field in a QVD file.
+    Metadata description of a field in a QVD file.
     """
     field_name: str = ""
     bit_offset: int = 0
@@ -65,7 +66,7 @@ class LineageInfo:
 @dataclass
 class QvdTableHeader:
     """
-    Represents the header of a QVD file.
+    Structure of the header of a QVD file.
     """
     qv_build_no: int = 0
     creator_doc: str = ""
@@ -86,7 +87,7 @@ class QvdTableHeader:
 
 class QvdValue(metaclass=ABCMeta):
     """
-    Base class for all QVD data types.
+    Base class for all QVD data types. All values in a QVD file must inherit from this class.
     """
     @property
     @abstractmethod
@@ -286,6 +287,11 @@ class StringValue(QvdValue):
 class DualIntegerValue(QvdValue):
     """
     Represents a dual value with an integer value and a string value in a QVD file.
+    
+    Dual values are used to store both a display value and a calculation value in a single field.
+    This is useful when the display representation of a value is different from the calculation
+    representation. For example, you may want to display a date as "MM/DD/YYYY" but store it as
+    an integer value representing the number of days since a certain date.
     """
     def __init__(self, int_value: int, string_value: str):
         """
@@ -315,6 +321,11 @@ class DualIntegerValue(QvdValue):
 class DualDoubleValue(QvdValue):
     """
     Represents a dual value with a double value and a string value in a QVD file.
+
+    Dual values are used to store both a display value and a calculation value in a single field.
+    This is useful when the display representation of a value is different from the calculation
+    representation. For example, you may want to display a monetary value as "$1,000.00" but store
+    it as a double value representing the number of cents.
     """
     def __init__(self, double_value: float, string_value: str):
         """
@@ -345,7 +356,7 @@ class QvdTable:
     """
     def __init__(self, data: List[List[QvdValue]], columns: List[str]):
         """
-        Constructs a new QVD data table.
+        Constructs a new QVD data table with the specified data and columns.
 
         :param data: The data of the data table.
         :param columns: The columns of the data table.
@@ -788,7 +799,7 @@ class QvdTable:
         :param path: The path to the QVD file.
         """
         # pylint: disable=import-outside-toplevel
-        from pyqvd.writer import QvdFileWriter
+        from pyqvd.io.writer import QvdFileWriter
 
         QvdFileWriter(path, self).write()
 
@@ -799,7 +810,7 @@ class QvdTable:
         :param target: The binary stream to write to.
         """
         # pylint: disable=import-outside-toplevel
-        from pyqvd.writer import QvdFileWriter
+        from pyqvd.io.writer import QvdFileWriter
 
         QvdFileWriter(target, self).write()
 
@@ -824,11 +835,18 @@ class QvdTable:
         """
         return {"columns": self._columns, "data": [[value.display_value for value in row] for row in self._data]}
 
-    def to_pandas(self) -> "pd.DataFable":
+    def to_pandas(self) -> "pd.DataFrame":
         """
-        Converts the data table to a pandas data table.
+        Converts the data table to a pandas data table. For value conversion, the calculation value
+        is used.
+
+        .. important::
+
+            This method requires the pandas library to be installed. See `pandas`_ for more information.
 
         :return: The pandas data table.
+
+        .. _pandas: https://pandas.pydata.org/
         """
         try:
             # pylint: disable=import-outside-toplevel
@@ -849,7 +867,7 @@ class QvdTable:
         :return: The data table of the QVD file.
         """
         # pylint: disable=import-outside-toplevel
-        from pyqvd.reader import QvdFileReader
+        from pyqvd.io.reader import QvdFileReader
 
         return QvdFileReader(path).read()
 
@@ -861,7 +879,7 @@ class QvdTable:
         :param source: The source to the QVD file.
         """
         # pylint: disable=import-outside-toplevel
-        from pyqvd.reader import QvdFileReader
+        from pyqvd.io.reader import QvdFileReader
 
         return QvdFileReader(source).read()
 
@@ -910,8 +928,14 @@ class QvdTable:
         """
         Constructs a new QVD data table from a pandas data frame.
 
+        .. important::
+
+            This method requires the pandas library to be installed. See `pandas`_ for more information.
+
         :param df: The pandas data frame.
         :return: The QVD data table.
+
+        .. _pandas: https://pandas.pydata.org/
         """
         try:
             # pylint: disable=import-outside-toplevel

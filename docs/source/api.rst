@@ -1,42 +1,25 @@
+.. _api:
+
 API Reference
 =============
 
-This is the public API reference for the PyQvd library.
+This part of the documentation covers all the public classes and functions of
+the PyQvd library. It is organized into a couple of sections:
 
-General
--------
+- :ref:`core`: The core functionality of PyQvd.
+- :ref:`io`: Input/output operations with QVD files.
 
-These are the general functions and classes that are available in the PyQvd library. This classes
-represents the basic building blocks of a data table stored in a QVD file.
+.. important::
 
-.. autoclass:: pyqvd.QvdValue
-    :members:
+    Only the public API is documented here. If you are looking for information
+    on a specific class or function, but it is not listed here, it is probably
+    a private API. Private APIs are subject to change without notice, and
+    should not be used in your code.
 
-.. autoclass:: pyqvd.IntegerValue
-    :members:
+....
 
-.. autoclass:: pyqvd.DoubleValue
-    :members:
+.. toctree::
+   :maxdepth: 3
 
-.. autoclass:: pyqvd.StringValue
-    :members:
-
-.. autoclass:: pyqvd.DualIntegerValue
-    :members:
-
-.. autoclass:: pyqvd.DualDoubleValue
-    :members:
-
-.. autoclass:: pyqvd.QvdTable
-    :members:
-
-File I/O
---------
-
-These are the classes that are used to read and write QVD files.
-
-.. autoclass:: pyqvd.QvdFileReader
-    :members:
-
-.. autoclass:: pyqvd.QvdFileWriter
-    :members:
+   Core <api/core>
+   I/O <api/io>
