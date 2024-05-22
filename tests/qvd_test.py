@@ -943,6 +943,105 @@ def test_qvd_table_drop_row_list_with_invalid_index():
 
     assert df.shape == (4, 2)
 
+def test_qvd_table_filter_by():
+    """
+    Tests the functionality of filtering a QVD table.
+    """
+    raw_df = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "A"],
+            [4, "B"],
+            [5, "A"]
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    new_df = df.filter_by("Key", lambda x: x.calculation_value in [1, 3, 5])
+
+    assert new_df.shape == (3, 2)
+    assert new_df.at(0, "Key").display_value == 1
+    assert new_df.at(1, "Key").display_value == 3
+    assert new_df.at(2, "Key").display_value == 5
+
+def test_qvd_table_sort_by_asc():
+    """
+    Tests the functionality of sorting a QVD table.
+    """
+    raw_df = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [3, "C"],
+            [1, "A"],
+            [5, "E"],
+            [2, "B"],
+            [4, "D"]
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    new_df = df.sort_by("Key")
+
+    assert new_df.shape == (5, 2)
+    assert new_df.at(0, "Key").display_value == 1
+    assert new_df.at(1, "Key").display_value == 2
+    assert new_df.at(2, "Key").display_value == 3
+    assert new_df.at(3, "Key").display_value == 4
+    assert new_df.at(4, "Key").display_value == 5
+
+def test_qvd_table_sort_by_desc():
+    """
+    Tests the functionality of sorting a QVD table in descending order.
+    """
+    raw_df = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [3, "C"],
+            [1, "A"],
+            [5, "E"],
+            [2, "B"],
+            [4, "D"]
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    new_df = df.sort_by("Key", ascending=False)
+
+    assert new_df.shape == (5, 2)
+    assert new_df.at(0, "Key").display_value == 5
+    assert new_df.at(1, "Key").display_value == 4
+    assert new_df.at(2, "Key").display_value == 3
+    assert new_df.at(3, "Key").display_value == 2
+    assert new_df.at(4, "Key").display_value == 1
+
+def test_qvd_table_sort_by_custom_comparator():
+    """
+    Tests the functionality of sorting a QVD table with a custom comparator.
+    """
+    raw_df = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [3, "C"],
+            [1, "A"],
+            [5, "E"],
+            [2, "B"],
+            [4, "D"]
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+    new_df = df.sort_by("Value", comparator=(lambda x, y: 1 if x.calculation_value > y.calculation_value else
+                                             -1 if x.calculation_value < y.calculation_value else 0))
+
+    assert new_df.shape == (5, 2)
+    assert new_df.at(0, "Value").display_value == "A"
+    assert new_df.at(1, "Value").display_value == "B"
+    assert new_df.at(2, "Value").display_value == "C"
+    assert new_df.at(3, "Value").display_value == "D"
+    assert new_df.at(4, "Value").display_value == "E"
+
 def test_qvd_table_at():
     """
     Tests the at functionality of a QVD table.

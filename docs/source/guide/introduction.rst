@@ -119,6 +119,25 @@ QVD table again.
     # Remove the column 'A' from the QVD table
     tbl.drop("A", axis="columns")
 
+Filtering and Sorting
+^^^^^^^^^^^^^^^^^^^^^
+
+The :class:`pyqvd.qvd.QvdTable` class also supports basic filtering and sorting operations.
+Therefor, the class provides the :func:`pyqvd.qvd.QvdTable.filter_by` and
+:func:`pyqvd.qvd.QvdTable.sort_by` methods to filter and sort the data based on the values
+of individual columns.
+
+.. code-block:: python
+
+    # Filter the data based on the values in the column 'A'
+    new_tbl = tbl.filter_by("A", lambda value: value.calculation_value > 0)
+
+    # Sort the data based on the values in the column 'A'
+    new_tbl = tbl.sort_by("A", ascending=False)
+
+    # Sorting is also possible by using a custom comparator
+    new_tbl = tbl.sort_by("A", comparator=lambda x, y: 1 if x.calculation_value > y.calculation_value else -1 if x.calculation_value < y.calculation_value else 0)
+
 Import and Export
 ^^^^^^^^^^^^^^^^^
 

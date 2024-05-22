@@ -4,9 +4,11 @@ Module contains the core classes and functions for dealing with QVD files. The m
 """
 
 import struct
+from copy import deepcopy
+from functools import cmp_to_key
 from enum import Enum
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal
+from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
 from dataclasses import dataclass
 from tabulate import tabulate
 
@@ -898,6 +900,57 @@ class QvdTable:
                 raise TypeError("Key must be a valid column name or a list of column names.")
         else:
             raise ValueError("Axis must be either 'rows' or 'columns'.")
+
+    def filter_by(self, column: str, condition: Callable[[QvdValue], bool]) -> "QvdTable":
+        """
+        Filters the data table by the specified column and condition. By default a new data table
+        is constructed with the filtered data.
+
+        :param column: The column to filter by.
+        :param condition: The condition to filter by.
+        :return: The filtered data table.
+        """
+        if column not in self._columns:
+            raise KeyError(f"Column '{column}' not found")
+
+        column_index = self._columns.index(column)
+        new_data = deepcopy(self._data)
+        new_data = [row for row in new_data if condition(row[column_index])]
+
+        return QvdTable(new_data, deepcopy(self._columns))
+
+    def sort_by(self, column: str, ascending: bool = True,
+                comparator: Optional[Callable[[QvdValue, QvdValue], int]] = None) -> "QvdTable":
+        """
+        Sorts the data table by the specified column. By default a new data table is constructed
+        with the sorted data.
+
+        :param column: The column to sort by.
+        :param ascending: Whether to sort in ascending
+        :param comparator: The comparator function to use for sorting.
+        :return: The sorted data table.
+        """
+        if column not in self._columns:
+            raise KeyError(f"Column '{column}' not found")
+
+        column_index = self._columns.index(column)
+        new_data = deepcopy(self._data)
+
+        def _default_comparator(a: QvdValue, b: QvdValue) -> int:
+            if a < b:
+                return -1
+            if a > b:
+                return 1
+
+            return 0
+
+        if comparator is None:
+            comparator = _default_comparator
+
+        new_data.sort(key=cmp_to_key(lambda row1, row2: comparator(row1[column_index], row2[column_index])),
+                      reverse=not ascending)
+
+        return QvdTable(new_data, deepcopy(self._columns))
 
     # pylint: disable-next=line-too-long
     def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
