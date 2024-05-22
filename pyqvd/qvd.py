@@ -6,7 +6,7 @@ Module contains the core classes and functions for dealing with QVD files. The m
 import struct
 from enum import Enum
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union
+from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal
 from dataclasses import dataclass
 from tabulate import tabulate
 
@@ -520,6 +520,22 @@ class QvdTable:
             14   5    6
             15   8    9
 
+        If you pass a column name that does not exist, a new column is added:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.set("D", [16, 17, 18]) # Alias tbl["D"] = [16, 17, 18]
+            >>> tbl
+            A    B    C    D
+            ---  ---  ---  ---
+            1    2    3    16
+            4    5    6    17
+            7    8    9    18
+
         You can pass a tuple with an integer and a string to overwrite a value at the specified row and column:
 
             >>> tbl
@@ -574,14 +590,17 @@ class QvdTable:
 
         # Set by column name
         if isinstance(key, str):
-            if key not in self._columns:
-                raise KeyError(f"Column '{key}' not found")
-
             if not isinstance(value, list) or not all(isinstance(item, QvdValue) for item in value):
                 raise ValueError("Value must be a list of QVD values.")
 
             if len(value) != len(self._data):
                 raise ValueError("Value must have the same number of elements as the table.")
+
+            # Add a new column if it does not exist
+            if key not in self._columns:
+                self._columns.append(key)
+                self._data = [row + [value[index]] for index, row in enumerate(self._data)]
+                return
 
             column_index = self._columns.index(key)
             for row_index, row in enumerate(self._data):
@@ -743,6 +762,142 @@ class QvdTable:
             return self._data[key]
 
         raise TypeError("Key must be a supported/valid one.")
+
+    def append(self, row: List[QvdValue]) -> None:
+        """
+        Appends a new row to the data table.
+
+        :param row: The row to append.
+        """
+        if len(row) != len(self._columns):
+            raise ValueError("Row must have the same number of elements as the table has columns.")
+
+        self._data.append(row)
+
+    def insert(self, index: int, row: List[QvdValue]) -> None:
+        """
+        Inserts a new row at the specified index.
+
+        :param index: The index to insert the row.
+        :param row: The row to insert.
+        """
+        if len(row) != len(self._columns):
+            raise ValueError("Row must have the same number of elements as the table has columns.")
+
+        if index < 0 or index > len(self._data):
+            raise IndexError("Index out of range")
+
+        self._data.insert(index, row)
+
+    def drop(self, key: Union[int, str, List[int], List[str]], axis: Literal["rows", "columns"] = "rows") -> None:
+        """
+        Drops the specified rows or columns from the data table.
+
+        :param key: The key to drop.
+        :param axis: The axis to drop along. Must be either 'rows' or 'columns'.
+
+        Examples
+        --------
+        You can drop a single row by passing an integer:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.drop(1)
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            7    8    9
+        
+        You can drop multiple rows by passing a list of integers:
+        
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.drop([0, 2])
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            4    5    6
+        
+        You can drop a single column by passing a string:
+        
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.drop("B", axis="columns")
+            >>> tbl
+            A    C
+            ---  ---
+            1    3
+            4    6
+        
+        You can drop multiple columns by passing a list of strings:
+
+            >>> tbl
+            A    B    C
+            ---  ---  ---
+            1    2    3
+            4    5    6
+            7    8    9
+            >>> tbl.drop(["A", "C"], axis="columns")
+            >>> tbl
+            B
+            ---
+            2
+            5
+            8
+        """
+        if axis == "rows":
+            if isinstance(key, int):
+                if key < 0 or key >= len(self._data):
+                    raise IndexError("Row index out of range")
+
+                del self._data[key]
+            elif isinstance(key, list):
+                for index in key:
+                    if index < 0 or index >= len(self._data):
+                        raise IndexError("Row index out of range")
+
+                for index in sorted(key, reverse=True):
+                    del self._data[index]
+            else:
+                raise TypeError("Key must be a valid row index or a list of row indices.")
+        elif axis == "columns":
+            if isinstance(key, str):
+                if key not in self._columns:
+                    raise KeyError(f"Column '{key}' not found")
+
+                column_index = self._columns.index(key)
+                for row in self._data:
+                    del row[column_index]
+
+                self._columns.remove(key)
+            elif isinstance(key, list):
+                for column in key:
+                    if column not in self._columns:
+                        raise KeyError(f"Column '{column}' not found")
+
+                for column in sorted(key, reverse=True):
+                    column_index = self._columns.index(column)
+                    for row in self._data:
+                        del row[column_index]
+
+                    self._columns.remove(column)
+            else:
+                raise TypeError("Key must be a valid column name or a list of column names.")
+        else:
+            raise ValueError("Axis must be either 'rows' or 'columns'.")
 
     # pylint: disable-next=line-too-long
     def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
