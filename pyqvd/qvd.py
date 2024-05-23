@@ -404,6 +404,16 @@ class QvdTable:
         """
         return len(self._data) == 0
 
+    def rename(self, columns: Dict[str, str]) -> "QvdTable":
+        """
+        Renames the columns of the data table.
+
+        :param columns: A dictionary mapping the old column names to the new column names.
+        :return: The data table with the renamed columns.
+        """
+        new_columns = [columns.get(column, column) for column in self._columns]
+        return QvdTable(self._data, new_columns)
+
     def head(self, n: int = 5) -> 'QvdTable':
         """
         Returns the first n rows of the data table.

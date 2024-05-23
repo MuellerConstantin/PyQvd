@@ -691,6 +691,24 @@ def test_qvd_table_setitem_by_slice():
     assert tbl.at(3, "Key").display_value == 8
     assert tbl.at(3, "Value").display_value == "H"
 
+def test_qvd_table_rename_columns():
+    """
+    Tests the functionality of renaming columns in a QVD table.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    new_tbl = tbl.rename({"Key": "NewKey", "Value": "NewValue"})
+
+    assert new_tbl.columns == ["NewKey", "NewValue"]
+
 def test_qvd_table_append_row():
     """
     Tests the functionality of appending a row to a QVD table.
