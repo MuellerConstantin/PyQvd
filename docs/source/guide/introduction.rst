@@ -138,6 +138,29 @@ of individual columns.
     # Sorting is also possible by using a custom comparator
     new_tbl = tbl.sort_by("A", comparator=lambda x, y: 1 if x.calculation_value > y.calculation_value else -1 if x.calculation_value < y.calculation_value else 0)
 
+Concatenate and Join
+^^^^^^^^^^^^^^^^^^^^
+
+The :class:`pyqvd.qvd.QvdTable` class also supports concatenation and joining of multiple
+QVD tables. The :func:`pyqvd.qvd.QvdTable.concat` method can be used to concatenate multiple
+QVD tables along the rows. The :func:`pyqvd.qvd.QvdTable.join` method can be used to join
+multiple QVD tables along the columns.
+
+The join method supports four different types of joins: inner, left, right, and outer. The
+default join type is the outer join. The join method also supports the specification of the
+join columns and the suffixes for the columns that are present in both tables.
+
+.. code-block:: python
+
+    # Concatenate two QVD tables
+    new_tbl = tbl.concat(tbl2)
+
+    # Join two QVD tables
+    new_tbl = tbl.join(tbl2, on="A", how="inner", lsuffix="_left", rsuffix="_right")
+
+    # Join two QVD tables using multiple columns
+    new_tbl = tbl.join(tbl2, on=["A", "B"], how="left", lsuffix="_left", rsuffix="_right")
+
 Import and Export
 ^^^^^^^^^^^^^^^^^
 

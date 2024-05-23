@@ -952,6 +952,318 @@ class QvdTable:
 
         return QvdTable(new_data, deepcopy(self._columns))
 
+    def concat(self, *args: "QvdTable") -> "QvdTable":
+        """
+        Concatenates multiple data tables into a single data table. The data tables are concatenated
+        row-wise. If a column is missing in a data table, the values for its rows are filled with None
+        and the column is added to the concatenated data table.
+
+        :param tables: The data tables to concatenate.
+        :return: The concatenated data table.
+        """
+        if len(args) == 0:
+            raise ValueError("At least one data table must be provided.")
+
+        new_columns = deepcopy(self._columns)
+        new_columns.extend(column for table in args for column in deepcopy(table.columns))
+        new_columns = list(dict.fromkeys(new_columns).keys())
+        new_data = []
+
+        for row in self._data:
+            new_row = [None] * len(new_columns)
+
+            for index, column in enumerate(self._columns):
+                new_row[new_columns.index(column)] = deepcopy(row[index])
+
+            new_data.append(new_row)
+
+        for table in args:
+            for row in table.data:
+                new_row = [None] * len(new_columns)
+
+                for index, column in enumerate(table.columns):
+                    new_row[new_columns.index(column)] = deepcopy(row[index])
+
+                new_data.append(new_row)
+
+        return QvdTable(new_data, new_columns)
+
+    def join(self, other: "QvdTable", on: Union[str, List[str]],
+             how: Literal["inner", "left", "right", "outer"] = "outer",
+             lsuffix: Optional[str] = None, rsuffix: Optional[str] = None) -> "QvdTable":
+        """
+        Joins the data table with another data table. By default a new data table is constructed
+        with the joined data.
+
+        :param other: The other data table to join with.
+        :param on: The column(s) to join on.
+        :param how: The type of join to perform.
+        :param lsuffix: The suffix to append to overlapping column names from the left table.
+        :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :return: The joined data table.
+
+        Examples
+        --------
+        You can perform an inner join between two data tables:
+
+            >>> tbl1
+            A    B
+            ---  ---
+            1    2
+            3    4
+            5    6
+            >>> tbl2
+            A    C
+            ---  ---
+            1    7
+            3    8
+            7    9
+            >>> tbl1.join(tbl2, on="A", how="inner")
+            A    B    C
+            ---  ---  ---
+            1    2    7
+            3    4    8
+        
+        You can use also suffixed for overlapping column names:
+
+            >>> tbl1
+            A    B
+            ---  ---
+            1    2
+            3    4
+            5    6
+            >>> tbl2
+            A    B
+            ---  ---
+            1    7
+            3    8
+            7    9
+            >>> tbl1.join(tbl2, on="A", how="inner", lsuffix="_left", rsuffix="_right")
+            A    B_left    B_right
+            ---  ---       ---
+            1    2         7
+            3    4         8
+        """
+        if not isinstance(other, QvdTable):
+            raise TypeError("Other must be a QVD table.")
+
+        if isinstance(on, str):
+            on = [on]
+
+        if not all(column in self._columns for column in on):
+            raise KeyError("Column(s) to join on must be present in the current table.")
+
+        if not all(column in other.columns for column in on):
+            raise KeyError("Column(s) to join on must be present in the other table.")
+
+        if (any(column in self._columns for column in other.columns if column not in on) and
+            (lsuffix is None and rsuffix is None)):
+            raise ValueError("Ambiguous column name(s) found. Please specify a suffix for the columns.")
+
+        if how == "inner":
+            return self._inner_join(other, on, lsuffix, rsuffix)
+        elif how == "left":
+            return self._left_join(other, on, lsuffix, rsuffix)
+        elif how == "right":
+            return self._right_join(other, on, lsuffix, rsuffix)
+        elif how == "outer":
+            return self._outer_join(other, on, lsuffix, rsuffix)
+        else:
+            raise ValueError("Invalid join type. Must be one of 'inner', 'left', 'right', or 'outer'.")
+
+    def _left_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
+                   rsuffix: Optional[str] = None) -> "QvdTable":
+        """
+        Performs a left join between the data table and another data table.
+
+        :param other: The other data table to join with.
+        :param on: The column(s) to join on.
+        :param lsuffix: The suffix to append to overlapping column names from the left table.
+        :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :return: The joined data table.
+        """
+        joined_columns = deepcopy(on)
+
+        if lsuffix:
+            joined_columns.extend(f"{column}{lsuffix}" for column in self.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in self.columns if column not in on)
+
+        if rsuffix:
+            joined_columns.extend(f"{column}{rsuffix}" for column in other.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in other.columns if column not in on)
+
+        joined_columns = list(dict.fromkeys(joined_columns).keys())
+        joined_data = []
+
+        for left_row in self._data:
+            matched = False
+
+            for right_row in other.data:
+                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
+                    joined_data.append(
+                        deepcopy([left_row[self._columns.index(column)] for column in on] +
+                                    [left_row[self._columns.index(column)]
+                                    for column in self.columns if column not in on] +
+                                    [right_row[other.columns.index(column)]
+                                    for column in other.columns if column not in on]))
+                    matched = True
+
+            if not matched:
+                joined_data.append(
+                    deepcopy([left_row[self._columns.index(column)] for column in on] +
+                                [left_row[self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [None] * (len(other.columns) - len(on))))
+
+        return QvdTable(joined_data, joined_columns)
+
+    def _right_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
+                   rsuffix: Optional[str] = None) -> "QvdTable":
+        """
+        Performs a right join between the data table and another data table.
+
+        :param other: The other data table to join with.
+        :param on: The column(s) to join on.
+        :param lsuffix: The suffix to append to overlapping column names from the left table.
+        :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :return: The joined data table.
+        """
+        joined_columns = deepcopy(on)
+
+        if rsuffix:
+            joined_columns.extend(f"{column}{rsuffix}" for column in other.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in other.columns if column not in on)
+
+        if lsuffix:
+            joined_columns.extend(f"{column}{lsuffix}" for column in self.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in self.columns if column not in on)
+
+        joined_columns = list(dict.fromkeys(joined_columns).keys())
+        joined_data = []
+
+        for right_row in other.data:
+            matched = False
+
+            for left_row in self._data:
+                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
+                    joined_data.append(
+                        deepcopy([right_row[self._columns.index(column)] for column in on] +
+                                    [right_row[self._columns.index(column)]
+                                    for column in self.columns if column not in on] +
+                                    [left_row[other.columns.index(column)]
+                                    for column in other.columns if column not in on]))
+                    matched = True
+
+            if not matched:
+                joined_data.append(
+                    deepcopy([right_row[self._columns.index(column)] for column in on] +
+                                [right_row[self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [None] * (len(other.columns) - len(on))))
+
+        return QvdTable(joined_data, joined_columns)
+
+    def _outer_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
+                   rsuffix: Optional[str] = None) -> "QvdTable":
+        """
+        Performs an outer join between the data table and another data table.
+
+        :param other: The other data table to join with.
+        :param on: The column(s) to join on.
+        :param lsuffix: The suffix to append to overlapping column names from the left table.
+        :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :return: The joined data table.
+        """
+        joined_columns = deepcopy(on)
+
+        if lsuffix:
+            joined_columns.extend(f"{column}{lsuffix}" for column in self.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in self.columns if column not in on)
+
+        if rsuffix:
+            joined_columns.extend(f"{column}{rsuffix}" for column in other.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in other.columns if column not in on)
+
+        joined_columns = list(dict.fromkeys(joined_columns).keys())
+        joined_data = []
+
+        for left_row in self._data:
+            matched = False
+
+            for right_row in other.data:
+                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
+                    joined_data.append(
+                        deepcopy([left_row[self._columns.index(column)] for column in on] +
+                                    [left_row[self._columns.index(column)]
+                                    for column in self.columns if column not in on] +
+                                    [right_row[other.columns.index(column)]
+                                    for column in other.columns if column not in on]))
+                    matched = True
+
+            if not matched:
+                joined_data.append(
+                    deepcopy([left_row[self._columns.index(column)] for column in on] +
+                                [left_row[self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [None] * (len(other.columns) - len(on))))
+
+        for right_row in other.data:
+            matched = False
+
+            for left_row in self._data:
+                if all([right_row[other.columns.index(key)] == left_row[self._columns.index(key)] for key in on]):
+                    matched = True
+
+            if not matched:
+                joined_data.append(
+                    deepcopy([right_row[other.columns.index(column)] for column in on] +
+                                [None] * (len(self.columns) - len(on)) +
+                                [right_row[other.columns.index(column)]
+                                for column in other.columns if column not in on]))
+
+        return QvdTable(joined_data, joined_columns)
+
+    def _inner_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
+                   rsuffix: Optional[str] = None) -> "QvdTable":
+        """
+        Performs an inner join between the data table and another data table.
+
+        :param other: The other data table to join with.
+        :param on: The column(s) to join on.
+        :param lsuffix: The suffix to append to overlapping column names from the left table.
+        :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :return: The joined data table.
+        """
+        joined_columns = deepcopy(on)
+
+        if lsuffix:
+            joined_columns.extend(f"{column}{lsuffix}" for column in self.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in self.columns if column not in on)
+
+        if rsuffix:
+            joined_columns.extend(f"{column}{rsuffix}" for column in other.columns if column not in on)
+        else:
+            joined_columns.extend(column for column in other.columns if column not in on)
+
+        joined_columns = list(dict.fromkeys(joined_columns).keys())
+        joined_data = []
+
+        for left_row in self.data:
+            for right_row in other.data:
+                if all([left_row[self.columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
+                    joined_data.append(
+                        deepcopy(left_row + [right_row[other.columns.index(column)]
+                                             for column in other.columns if column not in on]))
+
+        return QvdTable(joined_data, joined_columns)
+
     # pylint: disable-next=line-too-long
     def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
         """
