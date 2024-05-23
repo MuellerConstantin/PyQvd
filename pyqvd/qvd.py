@@ -905,7 +905,8 @@ class QvdTable:
         return QvdTable(new_data, deepcopy(self._columns))
 
     def sort_by(self, column: str, ascending: bool = True,
-                comparator: Optional[Callable[[QvdValue, QvdValue], int]] = None) -> "QvdTable":
+                comparator: Optional[Callable[[QvdValue, QvdValue], int]] = None,
+                na_position: Literal["first", "last"] = "first") -> "QvdTable":
         """
         Sorts the data table by the specified column. By default a new data table is constructed
         with the sorted data.
@@ -913,13 +914,15 @@ class QvdTable:
         :param column: The column to sort by.
         :param ascending: Whether to sort in ascending
         :param comparator: The comparator function to use for sorting.
+        :param na_position: Where to place missing values in the sorted data.
         :return: The sorted data table.
         """
         if column not in self._columns:
             raise KeyError(f"Column '{column}' not found")
 
         column_index = self._columns.index(column)
-        new_data = deepcopy(self._data)
+        new_data = deepcopy([row for row in self._data if row[column_index] is not None])
+        na_data = deepcopy([row for row in self._data if row[column_index] is None])
 
         def _default_comparator(a: QvdValue, b: QvdValue) -> int:
             if a < b:
@@ -934,6 +937,11 @@ class QvdTable:
 
         new_data.sort(key=cmp_to_key(lambda row1, row2: comparator(row1[column_index], row2[column_index])),
                       reverse=not ascending)
+
+        if na_position == "first":
+            new_data = na_data + new_data
+        else:
+            new_data = new_data + na_data
 
         return QvdTable(new_data, deepcopy(self._columns))
 
