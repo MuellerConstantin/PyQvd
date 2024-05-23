@@ -8,7 +8,7 @@ from typing import Union, List, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
                        DualIntegerValue, DualDoubleValue, QvdTableHeader, QvdFieldHeader,
-                       NumberFormat, LineageInfo, FieldType)
+                       NumberFormat, LineageInfo)
 
 class QvdFileReader:
     """
@@ -81,7 +81,7 @@ class QvdFileReader:
 
             number_format_xml = field_xml.find("NumberFormat")
             field.number_format = NumberFormat()
-            field.number_format.type = FieldType[number_format_xml.find("Type").text]
+            field.number_format.type = number_format_xml.find("Type").text
             field.number_format.n_dec = int(number_format_xml.find("nDec").text, 10)
             field.number_format.use_thou = int(number_format_xml.find("UseThou").text, 10)
             field.number_format.fmt = number_format_xml.find("Fmt").text

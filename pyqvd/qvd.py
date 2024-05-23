@@ -6,7 +6,6 @@ Module contains the core classes and functions for dealing with QVD files. The m
 import struct
 from copy import deepcopy
 from functools import cmp_to_key
-from enum import Enum
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
 from dataclasses import dataclass
@@ -15,26 +14,12 @@ from tabulate import tabulate
 if TYPE_CHECKING:
     import pandas as pd
 
-class FieldType(Enum):
-    """
-    The possible field types of a column in a QVD file.
-    """
-    UNKNOWN = 'UNKNOWN'
-    ASCII = 'ASCII'
-    DATE = 'DATE'
-    TIMESTAMP = 'TIMESTAMP'
-    INTEGER = 'INTEGER'
-    REAL = 'REAL'
-    INTERVAL = 'INTERVAL'
-    FIX = 'FIX'
-    MONEY = 'MONEY'
-
 @dataclass
 class NumberFormat:
     """
     Represents the number format of a field in a QVD file.
     """
-    type: FieldType = FieldType.UNKNOWN
+    type: str = "UNKNOWN"
     n_dec: int = 0
     use_thou: int = 0
     fmt: str = None

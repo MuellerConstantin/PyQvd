@@ -8,7 +8,8 @@ import struct
 import io
 from typing import Union, List, Dict, BinaryIO
 import xml.etree.ElementTree as ET
-from pyqvd.qvd import QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, NumberFormat, FieldType
+from pyqvd.qvd import (QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, NumberFormat,
+                       IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue)
 
 class QvdFileWriter:
     """
@@ -87,12 +88,25 @@ class QvdFileWriter:
             field_header.tags = []
 
             field_header.number_format = NumberFormat()
-            field_header.number_format.type = FieldType.UNKNOWN
+            field_header.number_format.type = "UNKNOWN"
             field_header.number_format.n_dec = 0
             field_header.number_format.use_thou = 0
             field_header.number_format.fmt = ""
             field_header.number_format.dec = ""
             field_header.number_format.thou = ""
+
+            symbol_types = set([type(symbol) for symbol in symbols])
+
+            if symbol_types.issubset(set([IntegerValue])):
+                field_header.tags.append("$numeric")
+                field_header.tags.append("$integer")
+            elif symbol_types.issubset(set([IntegerValue, DoubleValue, DualIntegerValue, DualDoubleValue])):
+                field_header.tags.append("$numeric")
+            elif symbol_types.issubset(set([StringValue])):
+                field_header.tags.append("$text")
+
+                if all([symbol.display_value.isascii() for symbol in symbols]):
+                    field_header.tags.append("$ascii")
 
             self._header.fields.append(field_header)
 
@@ -252,7 +266,7 @@ class QvdFileWriter:
             number_format_element = ET.SubElement(field_element, "NumberFormat")
 
             type_element = ET.SubElement(number_format_element, "Type")
-            type_element.text = field.number_format.type.name
+            type_element.text = field.number_format.type
 
             n_dec_element = ET.SubElement(number_format_element, "nDec")
             n_dec_element.text = str(field.number_format.n_dec)
