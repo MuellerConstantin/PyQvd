@@ -162,6 +162,50 @@ def test_qvd_table_constuct_directly_with_invalid_shape():
             ]
         )
 
+def test_qvd_table_copy():
+    """
+    Tests the functionality of copying a QVD table.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    new_tbl = tbl.copy(False)
+
+    assert new_tbl is not None
+    assert new_tbl.shape == (1, 2)
+    assert new_tbl[0, "Key"].display_value == 1
+
+    new_tbl[0, "Key"] = IntegerValue(2)
+
+    assert tbl.at(0, "Key").display_value == 2
+
+def test_qvd_table_copy_deep():
+    """
+    Tests the functionality of deep copying a QVD table.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    new_tbl = tbl.copy(True)
+
+    assert new_tbl is not None
+    assert new_tbl.shape == (1, 2)
+    assert new_tbl[0, "Key"].display_value == 1
+
+    new_tbl[0, "Key"] = IntegerValue(2)
+
+    assert tbl.at(0, "Key").display_value == 1
+
 def test_qvd_table_get_by_tuple():
     """
     Tests the functionality of getting a cell from a QVD table.
@@ -816,7 +860,26 @@ def test_qvd_table_drop_column():
     }
 
     tbl = QvdTable.from_dict(raw_tbl)
-    tbl.drop("New", axis="columns")
+    new_tb = tbl.drop("New", axis="columns")
+
+    assert new_tb.shape == (3, 2)
+    assert new_tb.columns == ["Key", "Value"]
+
+def test_qvd_table_drop_column_inplace():
+    """
+    Tests the functionality of dropping a column from a QVD table in place.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value", "New"],
+        "data": [
+            [1, "A", "X"],
+            [2, "B", "Y"],
+            [3, "C", "Z"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.drop("New", inplace=True, axis="columns")
 
     assert tbl.shape == (3, 2)
     assert tbl.columns == ["Key", "Value"]
@@ -853,10 +916,10 @@ def test_qvd_table_drop_column_list():
     }
 
     tbl = QvdTable.from_dict(raw_tbl)
-    tbl.drop(["Value", "New"], axis="columns")
+    new_tb = tbl.drop(["Value", "New"], axis="columns")
 
-    assert tbl.shape == (3, 1)
-    assert tbl.columns == ["Key"]
+    assert new_tb.shape == (3, 1)
+    assert new_tb.columns == ["Key"]
 
 def test_qvd_table_drop_column_list_with_invalid_name():
     """
@@ -893,7 +956,29 @@ def test_qvd_table_drop_row():
     }
 
     tbl = QvdTable.from_dict(raw_tbl)
-    tbl.drop(1)
+    new_tb = tbl.drop(1)
+
+    assert new_tb.shape == (3, 2)
+    assert new_tb.at(0, "Key").display_value == 1
+    assert new_tb.at(1, "Key").display_value == 3
+    assert new_tb.at(2, "Key").display_value == 4
+
+def test_qvd_table_drop_row_inplace():
+    """
+    Tests the functionality of dropping a row from a QVD table in place.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"],
+            [4, "D"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.drop(1, inplace=True)
 
     assert tbl.shape == (3, 2)
     assert tbl.at(0, "Key").display_value == 1
@@ -934,11 +1019,11 @@ def test_qvd_table_drop_row_list():
     }
 
     tbl = QvdTable.from_dict(raw_tbl)
-    tbl.drop([0, 2])
+    new_tb = tbl.drop([0, 2])
 
-    assert tbl.shape == (2, 2)
-    assert tbl.at(0, "Key").display_value == 2
-    assert tbl.at(1, "Key").display_value == 4
+    assert new_tb.shape == (2, 2)
+    assert new_tb.at(0, "Key").display_value == 2
+    assert new_tb.at(1, "Key").display_value == 4
 
 def test_qvd_table_drop_row_list_with_invalid_index():
     """
@@ -983,6 +1068,49 @@ def test_qvd_table_filter_by():
     assert new_tbl.at(0, "Key").display_value == 1
     assert new_tbl.at(1, "Key").display_value == 3
     assert new_tbl.at(2, "Key").display_value == 5
+
+def test_qvd_table_filter_by_with_invalid_column():
+    """
+    Tests the functionality of filtering a QVD table with an invalid column raises an exception.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "A"],
+            [4, "B"],
+            [5, "A"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+
+    with pytest.raises(KeyError):
+        tbl.filter_by("Invalid", lambda x: x.calculation_value in [1, 3, 5])
+
+def test_qvd_table_filter_by_inplace():
+    """
+    Tests the functionality of filtering a QVD table in place.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "A"],
+            [4, "B"],
+            [5, "A"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.filter_by("Key", lambda x: x.calculation_value in [1, 3, 5], inplace=True)
+
+    assert tbl.shape == (3, 2)
+    assert tbl.at(0, "Key").display_value == 1
+    assert tbl.at(1, "Key").display_value == 3
+    assert tbl.at(2, "Key").display_value == 5
 
 def test_qvd_table_sort_by_asc():
     """
@@ -1033,6 +1161,31 @@ def test_qvd_table_sort_by_desc():
     assert new_tbl.at(2, "Key").display_value == 3
     assert new_tbl.at(3, "Key").display_value == 2
     assert new_tbl.at(4, "Key").display_value == 1
+
+def test_qvd_table_sort_by_inplace():
+    """
+    Tests the functionality of sorting a QVD table in place.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [3, "C"],
+            [1, "A"],
+            [5, "E"],
+            [2, "B"],
+            [4, "D"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.sort_by("Key", inplace=True)
+
+    assert tbl.shape == (5, 2)
+    assert tbl.at(0, "Key").display_value == 1
+    assert tbl.at(1, "Key").display_value == 2
+    assert tbl.at(2, "Key").display_value == 3
+    assert tbl.at(3, "Key").display_value == 4
+    assert tbl.at(4, "Key").display_value == 5
 
 def test_qvd_table_sort_by_custom_comparator():
     """
@@ -1089,6 +1242,36 @@ def test_qvd_table_concat():
     assert new_tbl.at(1, "Key").display_value == 2
     assert new_tbl.at(2, "Key").display_value == 3
     assert new_tbl.at(3, "Key").display_value == 4
+
+def test_qvd_table_concat_inplace():
+    """
+    Tests the functionality of concatenating two QVD tables in place.
+    """
+    raw_tbl1 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"]
+        ]
+    }
+
+    raw_tbl2 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [3, "C"],
+            [4, "D"]
+        ]
+    }
+
+    tbl1 = QvdTable.from_dict(raw_tbl1)
+    tbl2 = QvdTable.from_dict(raw_tbl2)
+    tbl1.concat(tbl2, inplace=True)
+
+    assert tbl1.shape == (4, 2)
+    assert tbl1.at(0, "Key").display_value == 1
+    assert tbl1.at(1, "Key").display_value == 2
+    assert tbl1.at(2, "Key").display_value == 3
+    assert tbl1.at(3, "Key").display_value == 4
 
 def test_qvd_table_concat_different_columns():
     """
@@ -1162,6 +1345,43 @@ def test_qvd_table_left_join():
     assert new_tbl.at(0, "New").display_value == "X"
     assert new_tbl.at(1, "New") is None
     assert new_tbl.at(2, "New").display_value == "Y"
+
+def test_qvd_table_left_join_inplace():
+    """
+    Tests the functionality of performing a left join on two QVD tables in place.
+    """
+    raw_tbl1 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    raw_tbl2 = {
+        "columns": ["Key", "New"],
+        "data": [
+            [1, "X"],
+            [3, "Y"],
+            [4, "Z"]
+        ]
+    }
+
+    tbl1 = QvdTable.from_dict(raw_tbl1)
+    tbl2 = QvdTable.from_dict(raw_tbl2)
+    tbl1.join(tbl2, on="Key", how="left", inplace=True)
+
+    assert tbl1.shape == (3, 3)
+    assert tbl1.at(0, "Key").display_value == 1
+    assert tbl1.at(1, "Key").display_value == 2
+    assert tbl1.at(2, "Key").display_value == 3
+    assert tbl1.at(0, "Value").display_value == "A"
+    assert tbl1.at(1, "Value").display_value == "B"
+    assert tbl1.at(2, "Value").display_value == "C"
+    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(1, "New") is None
+    assert tbl1.at(2, "New").display_value == "Y"
 
 def test_qvd_table_left_join_with_multiple_keys():
     """
@@ -1305,6 +1525,43 @@ def test_qvd_table_right_join():
     assert new_tbl.at(1, "New").display_value == "Y"
     assert new_tbl.at(2, "New").display_value == "Z"
 
+def test_qvd_table_right_join_inplace():
+    """
+    Tests the functionality of performing a right join on two QVD tables in place.
+    """
+    raw_tbl1 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    raw_tbl2 = {
+        "columns": ["Key", "New"],
+        "data": [
+            [1, "X"],
+            [3, "Y"],
+            [4, "Z"]
+        ]
+    }
+
+    tbl1 = QvdTable.from_dict(raw_tbl1)
+    tbl2 = QvdTable.from_dict(raw_tbl2)
+    tbl1.join(tbl2, on="Key", how="right", inplace=True)
+
+    assert tbl1.shape == (3, 3)
+    assert tbl1.at(0, "Key").display_value == 1
+    assert tbl1.at(1, "Key").display_value == 3
+    assert tbl1.at(2, "Key").display_value == 4
+    assert tbl1.at(0, "Value").display_value == "A"
+    assert tbl1.at(1, "Value").display_value == "C"
+    assert tbl1.at(2, "Value") is None
+    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(1, "New").display_value == "Y"
+    assert tbl1.at(2, "New").display_value == "Z"
+
 def test_qvd_table_right_join_with_overlapping_columns():
     """
     Tests the functionality of performing a right join on two QVD tables with overlapping columns.
@@ -1416,6 +1673,40 @@ def test_qvd_table_inner_join():
     assert new_tbl.at(0, "New").display_value == "X"
     assert new_tbl.at(1, "New").display_value == "Y"
 
+def test_qvd_table_inner_join_inplace():
+    """
+    Tests the functionality of performing an inner join on two QVD tables in place.
+    """
+    raw_tbl1 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    raw_tbl2 = {
+        "columns": ["Key", "New"],
+        "data": [
+            [1, "X"],
+            [3, "Y"],
+            [4, "Z"]
+        ]
+    }
+
+    tbl1 = QvdTable.from_dict(raw_tbl1)
+    tbl2 = QvdTable.from_dict(raw_tbl2)
+    tbl1.join(tbl2, on="Key", how="inner", inplace=True)
+
+    assert tbl1.shape == (2, 3)
+    assert tbl1.at(0, "Key").display_value == 1
+    assert tbl1.at(1, "Key").display_value == 3
+    assert tbl1.at(0, "Value").display_value == "A"
+    assert tbl1.at(1, "Value").display_value == "C"
+    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(1, "New").display_value == "Y"
+
 def test_qvd_table_inner_join_with_multiple_keys():
     """
     Tests the functionality of performing an inner join on two QVD tables with multiple keys.
@@ -1525,6 +1816,46 @@ def test_qvd_table_outer_join():
     assert new_tbl.at(1, "New") is None
     assert new_tbl.at(2, "New").display_value == "Y"
     assert new_tbl.at(3, "New").display_value == "Z"
+
+def test_qvd_table_outer_join_inplace():
+    """
+    Tests the functionality of performing an outer join on two QVD tables in place.
+    """
+    raw_tbl1 = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    raw_tbl2 = {
+        "columns": ["Key", "New"],
+        "data": [
+            [1, "X"],
+            [3, "Y"],
+            [4, "Z"]
+        ]
+    }
+
+    tbl1 = QvdTable.from_dict(raw_tbl1)
+    tbl2 = QvdTable.from_dict(raw_tbl2)
+    tbl1.join(tbl2, on="Key", how="outer", inplace=True)
+
+    assert tbl1.shape == (4, 3)
+    assert tbl1.at(0, "Key").display_value == 1
+    assert tbl1.at(1, "Key").display_value == 2
+    assert tbl1.at(2, "Key").display_value == 3
+    assert tbl1.at(3, "Key").display_value == 4
+    assert tbl1.at(0, "Value").display_value == "A"
+    assert tbl1.at(1, "Value").display_value == "B"
+    assert tbl1.at(2, "Value").display_value == "C"
+    assert tbl1.at(3, "Value") is None
+    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(1, "New") is None
+    assert tbl1.at(2, "New").display_value == "Y"
+    assert tbl1.at(3, "New").display_value == "Z"
 
 def test_qvd_table_outer_join_with_multiple_keys():
     """

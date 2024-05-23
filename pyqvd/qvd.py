@@ -362,20 +362,20 @@ class QvdTable:
     @property
     def data(self) -> List[List[QvdValue]]:
         """
-        Returns the data of the data table.
+        Returns the internally stored data. This property is read-only and immutable.
 
         :return: The data.
         """
-        return self._data
+        return deepcopy(self._data)
 
     @property
     def columns(self) -> List[str]:
         """
-        Returns the columns of the data table.
+        Returns the columns of the data table. This property is read-only and immutable.
 
         :return: The column names.
         """
-        return self._columns
+        return deepcopy(self._columns)
 
     @property
     def shape(self) -> Tuple[int, int]:
@@ -473,6 +473,18 @@ class QvdTable:
             raise KeyError(f"Column '{column}' not found")
 
         return self._data[row][self._columns.index(column)]
+
+    def copy(self, deep: bool = True) -> "QvdTable":
+        """
+        Returns a copy of the data table.
+
+        :param deep: Whether to perform a deep copy.
+        :return: The copy of the data table.
+        """
+        if deep:
+            return deepcopy(self)
+        else:
+            return QvdTable(self._data, self._columns)
 
     # pylint: disable-next=line-too-long
     def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[QvdValue, List[QvdValue], List[List[QvdValue]]]) -> None:
@@ -786,12 +798,15 @@ class QvdTable:
 
         self._data.insert(index, row)
 
-    def drop(self, key: Union[int, str, List[int], List[str]], axis: Literal["rows", "columns"] = "rows") -> None:
+    def drop(self, key: Union[int, str, List[int], List[str]], axis: Literal["rows", "columns"] = "rows",
+             inplace: bool = False) -> 'QvdTable':
         """
         Drops the specified rows or columns from the data table.
 
         :param key: The key to drop.
         :param axis: The axis to drop along. Must be either 'rows' or 'columns'.
+        :param inplace: Instead of returning a new data table, modify the current data table.
+        :return: The data table with the specified rows or columns dropped.
 
         Examples
         --------
@@ -856,53 +871,73 @@ class QvdTable:
             8
         """
         if axis == "rows":
+            new_data = deepcopy(self._data)
+
             if isinstance(key, int):
                 if key < 0 or key >= len(self._data):
                     raise IndexError("Row index out of range")
 
-                del self._data[key]
+                del new_data[key]
             elif isinstance(key, list):
                 for index in key:
                     if index < 0 or index >= len(self._data):
                         raise IndexError("Row index out of range")
 
                 for index in sorted(key, reverse=True):
-                    del self._data[index]
+                    del new_data[index]
             else:
                 raise TypeError("Key must be a valid row index or a list of row indices.")
+
+            if inplace:
+                self._data = new_data
+                return self
+            else:
+                return QvdTable(new_data, deepcopy(self._columns))
         elif axis == "columns":
+            new_data = deepcopy(self._data)
+            new_columns = deepcopy(self._columns)
+
             if isinstance(key, str):
-                if key not in self._columns:
+                if key not in new_columns:
                     raise KeyError(f"Column '{key}' not found")
 
-                column_index = self._columns.index(key)
-                for row in self._data:
+                column_index = new_columns.index(key)
+                for row in new_data:
                     del row[column_index]
 
-                self._columns.remove(key)
+                new_columns.remove(key)
             elif isinstance(key, list):
                 for column in key:
-                    if column not in self._columns:
+                    if column not in new_columns:
                         raise KeyError(f"Column '{column}' not found")
 
                 for column in sorted(key, reverse=True):
-                    column_index = self._columns.index(column)
-                    for row in self._data:
+                    column_index = new_columns.index(column)
+                    for row in new_data:
                         del row[column_index]
 
-                    self._columns.remove(column)
+                    new_columns.remove(column)
             else:
                 raise TypeError("Key must be a valid column name or a list of column names.")
+
+            if inplace:
+                self._data = new_data
+                self._columns = new_columns
+                return self
+            else:
+                return QvdTable(new_data, new_columns)
         else:
             raise ValueError("Axis must be either 'rows' or 'columns'.")
 
-    def filter_by(self, column: str, condition: Callable[[QvdValue], bool]) -> "QvdTable":
+    def filter_by(self, column: str, condition: Callable[[QvdValue], bool],
+                  inplace: bool = False) -> "QvdTable":
         """
         Filters the data table by the specified column and condition. By default a new data table
         is constructed with the filtered data.
 
         :param column: The column to filter by.
         :param condition: The condition to filter by.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The filtered data table.
         """
         if column not in self._columns:
@@ -912,11 +947,16 @@ class QvdTable:
         new_data = deepcopy(self._data)
         new_data = [row for row in new_data if condition(row[column_index])]
 
-        return QvdTable(new_data, deepcopy(self._columns))
+        if inplace:
+            self._data = new_data
+            return self
+        else:
+            return QvdTable(new_data, deepcopy(self._columns))
 
     def sort_by(self, column: str, ascending: bool = True,
                 comparator: Optional[Callable[[QvdValue, QvdValue], int]] = None,
-                na_position: Literal["first", "last"] = "first") -> "QvdTable":
+                na_position: Literal["first", "last"] = "first",
+                inplace: bool = False) -> "QvdTable":
         """
         Sorts the data table by the specified column. By default a new data table is constructed
         with the sorted data.
@@ -925,6 +965,7 @@ class QvdTable:
         :param ascending: Whether to sort in ascending
         :param comparator: The comparator function to use for sorting.
         :param na_position: Where to place missing values in the sorted data.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The sorted data table.
         """
         if column not in self._columns:
@@ -953,15 +994,20 @@ class QvdTable:
         else:
             new_data = new_data + na_data
 
-        return QvdTable(new_data, deepcopy(self._columns))
+        if inplace:
+            self._data = new_data
+            return self
+        else:
+            return QvdTable(new_data, deepcopy(self._columns))
 
-    def concat(self, *args: "QvdTable") -> "QvdTable":
+    def concat(self, *args: "QvdTable", inplace: bool = False) -> "QvdTable":
         """
         Concatenates multiple data tables into a single data table. The data tables are concatenated
         row-wise. If a column is missing in a data table, the values for its rows are filled with None
         and the column is added to the concatenated data table.
 
         :param tables: The data tables to concatenate.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The concatenated data table.
         """
         if len(args) == 0:
@@ -989,11 +1035,17 @@ class QvdTable:
 
                 new_data.append(new_row)
 
-        return QvdTable(new_data, new_columns)
+        if inplace:
+            self._data = new_data
+            self._columns = new_columns
+            return self
+        else:
+            return QvdTable(new_data, new_columns)
 
     def join(self, other: "QvdTable", on: Union[str, List[str]],
              how: Literal["inner", "left", "right", "outer"] = "outer",
-             lsuffix: Optional[str] = None, rsuffix: Optional[str] = None) -> "QvdTable":
+             lsuffix: Optional[str] = None, rsuffix: Optional[str] = None,
+             inplace: bool = False) -> "QvdTable":
         """
         Joins the data table with another data table. By default a new data table is constructed
         with the joined data.
@@ -1003,6 +1055,7 @@ class QvdTable:
         :param how: The type of join to perform.
         :param lsuffix: The suffix to append to overlapping column names from the left table.
         :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The joined data table.
 
         Examples
@@ -1064,18 +1117,18 @@ class QvdTable:
             raise ValueError("Ambiguous column name(s) found. Please specify a suffix for the columns.")
 
         if how == "inner":
-            return self._inner_join(other, on, lsuffix, rsuffix)
+            return self._inner_join(other, on, lsuffix, rsuffix, inplace)
         elif how == "left":
-            return self._left_join(other, on, lsuffix, rsuffix)
+            return self._left_join(other, on, lsuffix, rsuffix, inplace)
         elif how == "right":
-            return self._right_join(other, on, lsuffix, rsuffix)
+            return self._right_join(other, on, lsuffix, rsuffix, inplace)
         elif how == "outer":
-            return self._outer_join(other, on, lsuffix, rsuffix)
+            return self._outer_join(other, on, lsuffix, rsuffix, inplace)
         else:
             raise ValueError("Invalid join type. Must be one of 'inner', 'left', 'right', or 'outer'.")
 
     def _left_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
-                   rsuffix: Optional[str] = None) -> "QvdTable":
+                   rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
         """
         Performs a left join between the data table and another data table.
 
@@ -1083,6 +1136,7 @@ class QvdTable:
         :param on: The column(s) to join on.
         :param lsuffix: The suffix to append to overlapping column names from the left table.
         :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The joined data table.
         """
         joined_columns = deepcopy(on)
@@ -1120,10 +1174,15 @@ class QvdTable:
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
 
-        return QvdTable(joined_data, joined_columns)
+        if inplace:
+            self._data = joined_data
+            self._columns = joined_columns
+            return self
+        else:
+            return QvdTable(joined_data, joined_columns)
 
     def _right_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
-                   rsuffix: Optional[str] = None) -> "QvdTable":
+                   rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
         """
         Performs a right join between the data table and another data table.
 
@@ -1131,6 +1190,7 @@ class QvdTable:
         :param on: The column(s) to join on.
         :param lsuffix: The suffix to append to overlapping column names from the left table.
         :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The joined data table.
         """
         joined_columns = deepcopy(on)
@@ -1168,10 +1228,15 @@ class QvdTable:
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
 
-        return QvdTable(joined_data, joined_columns)
+        if inplace:
+            self._data = joined_data
+            self._columns = joined_columns
+            return self
+        else:
+            return QvdTable(joined_data, joined_columns)
 
     def _outer_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
-                   rsuffix: Optional[str] = None) -> "QvdTable":
+                   rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
         """
         Performs an outer join between the data table and another data table.
 
@@ -1179,6 +1244,7 @@ class QvdTable:
         :param on: The column(s) to join on.
         :param lsuffix: The suffix to append to overlapping column names from the left table.
         :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The joined data table.
         """
         joined_columns = deepcopy(on)
@@ -1230,10 +1296,15 @@ class QvdTable:
                                 [right_row[other.columns.index(column)]
                                 for column in other.columns if column not in on]))
 
-        return QvdTable(joined_data, joined_columns)
+        if inplace:
+            self._data = joined_data
+            self._columns = joined_columns
+            return self
+        else:
+            return QvdTable(joined_data, joined_columns)
 
     def _inner_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
-                   rsuffix: Optional[str] = None) -> "QvdTable":
+                   rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
         """
         Performs an inner join between the data table and another data table.
 
@@ -1241,6 +1312,7 @@ class QvdTable:
         :param on: The column(s) to join on.
         :param lsuffix: The suffix to append to overlapping column names from the left table.
         :param rsuffix: The suffix to append to overlapping column names from the right table.
+        :param inplace: Instead of returning a new data table, modify the current data table.
         :return: The joined data table.
         """
         joined_columns = deepcopy(on)
@@ -1265,7 +1337,12 @@ class QvdTable:
                         deepcopy(left_row + [right_row[other.columns.index(column)]
                                              for column in other.columns if column not in on]))
 
-        return QvdTable(joined_data, joined_columns)
+        if inplace:
+            self._data = joined_data
+            self._columns = joined_columns
+            return self
+        else:
+            return QvdTable(joined_data, joined_columns)
 
     # pylint: disable-next=line-too-long
     def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
