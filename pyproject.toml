@@ -21,14 +21,14 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.8"
 ]
 
 [project.urls]
 Homepage = "https://github.com/MuellerConstantin/PyQvd"
 Repository = "https://github.com/MuellerConstantin/PyQvd.git"
 Issues = "https://github.com/MuellerConstantin/PyQvd/issues"
+Documentation = "https://pyqvd.readthedocs.io"
 
 [project.optional-dependencies]
 pandas = ["pandas"]

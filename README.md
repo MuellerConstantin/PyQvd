@@ -29,13 +29,14 @@ To use PyQvd, first install it using pip:
 
 ## Usage
 
-Below is a quick example how to use _PyQvd_.
+For a detailed overview of the library's API, please refer to the
+[documentation](https://pyqvd.readthedocs.io). Below is a quick example how to use _PyQvd_.
 
 ```python
 from pyqvd import QvdTable
 
-df = QvdTable.from_qvd("path/to/file.qvd")
-print(df.head())
+tbl = QvdTable.from_qvd("path/to/file.qvd")
+print(tbl.head())
 ```
 
 The above example loads the _PyQvd_ library and parses an example QVD file. A QVD file is typically
