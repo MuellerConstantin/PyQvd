@@ -353,7 +353,7 @@ class QvdTable:
             raise ValueError("All records must have the same number of values.")
 
         # Ensure the number of columns matches the number of values in each record
-        if len(columns) != len(data[0]):
+        if len(data) > 0 and len(data[0]) != len(columns):
             raise ValueError("The number of columns must match the number of values in each record.")
 
         self._data: List[List[QvdValue]] = data
@@ -414,7 +414,7 @@ class QvdTable:
         new_columns = [columns.get(column, column) for column in self._columns]
         return QvdTable(self._data, new_columns)
 
-    def head(self, n: int = 5) -> 'QvdTable':
+    def head(self, n: int = 5) -> "QvdTable":
         """
         Returns the first n rows of the data table.
 
@@ -423,7 +423,7 @@ class QvdTable:
         """
         return QvdTable(self._data[:n], self._columns)
 
-    def tail(self, n: int = 5) -> 'QvdTable':
+    def tail(self, n: int = 5) -> "QvdTable":
         """
         Returns the last n rows of the data table.
 
@@ -1154,23 +1154,21 @@ class QvdTable:
         joined_columns = list(dict.fromkeys(joined_columns).keys())
         joined_data = []
 
-        for left_row in self._data:
-            matched = False
+        left_dict = {tuple(row[self._columns.index(key)] for key in on): row for row in self.data}
+        right_dict = {tuple(row[other.columns.index(key)] for key in on): row for row in other.data}
 
-            for right_row in other.data:
-                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
-                    joined_data.append(
-                        deepcopy([left_row[self._columns.index(column)] for column in on] +
-                                    [left_row[self._columns.index(column)]
-                                    for column in self.columns if column not in on] +
-                                    [right_row[other.columns.index(column)]
-                                    for column in other.columns if column not in on]))
-                    matched = True
-
-            if not matched:
+        for key in left_dict.keys():
+            if key in right_dict:
                 joined_data.append(
-                    deepcopy([left_row[self._columns.index(column)] for column in on] +
-                                [left_row[self._columns.index(column)]
+                    deepcopy([value for value in key] +
+                                [left_dict[key][self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [right_dict[key][other.columns.index(column)]
+                                for column in other.columns if column not in on]))
+            else:
+                joined_data.append(
+                    deepcopy([value for value in key] +
+                                [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
 
@@ -1208,25 +1206,23 @@ class QvdTable:
         joined_columns = list(dict.fromkeys(joined_columns).keys())
         joined_data = []
 
-        for right_row in other.data:
-            matched = False
+        left_dict = {tuple(row[self._columns.index(key)] for key in on): row for row in self.data}
+        right_dict = {tuple(row[other.columns.index(key)] for key in on): row for row in other.data}
 
-            for left_row in self._data:
-                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
-                    joined_data.append(
-                        deepcopy([right_row[self._columns.index(column)] for column in on] +
-                                    [right_row[self._columns.index(column)]
-                                    for column in self.columns if column not in on] +
-                                    [left_row[other.columns.index(column)]
-                                    for column in other.columns if column not in on]))
-                    matched = True
-
-            if not matched:
+        for key in right_dict.keys():
+            if key in left_dict:
                 joined_data.append(
-                    deepcopy([right_row[self._columns.index(column)] for column in on] +
-                                [right_row[self._columns.index(column)]
+                    deepcopy([value for value in key] +
+                                [right_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
-                                [None] * (len(other.columns) - len(on))))
+                                [left_dict[key][other.columns.index(column)]
+                                for column in other.columns if column not in on]))
+            else:
+                joined_data.append(
+                    deepcopy([value for value in key] +
+                                [right_dict[key][other.columns.index(column)]
+                                for column in other.columns if column not in on] +
+                                [None] * (len(self.columns) - len(on))))
 
         if inplace:
             self._data = joined_data
@@ -1262,38 +1258,30 @@ class QvdTable:
         joined_columns = list(dict.fromkeys(joined_columns).keys())
         joined_data = []
 
-        for left_row in self._data:
-            matched = False
+        left_dict = {tuple(row[self._columns.index(key)] for key in on): row for row in self.data}
+        right_dict = {tuple(row[other.columns.index(key)] for key in on): row for row in other.data}
 
-            for right_row in other.data:
-                if all([left_row[self._columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
-                    joined_data.append(
-                        deepcopy([left_row[self._columns.index(column)] for column in on] +
-                                    [left_row[self._columns.index(column)]
-                                    for column in self.columns if column not in on] +
-                                    [right_row[other.columns.index(column)]
-                                    for column in other.columns if column not in on]))
-                    matched = True
-
-            if not matched:
+        for key in left_dict.keys():
+            if key in right_dict:
                 joined_data.append(
-                    deepcopy([left_row[self._columns.index(column)] for column in on] +
-                                [left_row[self._columns.index(column)]
+                    deepcopy([value for value in key] +
+                                [left_dict[key][self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [right_dict[key][other.columns.index(column)]
+                                for column in other.columns if column not in on]))
+            else:
+                joined_data.append(
+                    deepcopy([value for value in key] +
+                                [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
 
-        for right_row in other.data:
-            matched = False
-
-            for left_row in self._data:
-                if all([right_row[other.columns.index(key)] == left_row[self._columns.index(key)] for key in on]):
-                    matched = True
-
-            if not matched:
+        for key in right_dict.keys():
+            if key not in left_dict:
                 joined_data.append(
-                    deepcopy([right_row[other.columns.index(column)] for column in on] +
+                    deepcopy([value for value in key] +
                                 [None] * (len(self.columns) - len(on)) +
-                                [right_row[other.columns.index(column)]
+                                [right_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on]))
 
         if inplace:
@@ -1330,12 +1318,17 @@ class QvdTable:
         joined_columns = list(dict.fromkeys(joined_columns).keys())
         joined_data = []
 
-        for left_row in self.data:
-            for right_row in other.data:
-                if all([left_row[self.columns.index(key)] == right_row[other.columns.index(key)] for key in on]):
-                    joined_data.append(
-                        deepcopy(left_row + [right_row[other.columns.index(column)]
-                                             for column in other.columns if column not in on]))
+        left_dict = {tuple(row[self._columns.index(key)] for key in on): row for row in self.data}
+        right_dict = {tuple(row[other.columns.index(key)] for key in on): row for row in other.data}
+
+        for key in left_dict.keys():
+            if key in right_dict:
+                joined_data.append(
+                    deepcopy([value for value in key] +
+                                [left_dict[key][self._columns.index(column)]
+                                for column in self.columns if column not in on] +
+                                [right_dict[key][other.columns.index(column)]
+                                for column in other.columns if column not in on]))
 
         if inplace:
             self._data = joined_data
