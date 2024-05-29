@@ -74,7 +74,8 @@ class QvdFileWriter:
                 symbols[value] = len(symbols)
 
             # Extend the symbol table with the new symbols
-            current_symbols_buffer = b"".join([symbol.byte_representation for symbol in symbols])
+            current_symbols_buffer = b"".join([QvdFileWriter._get_symbol_byte_representation(symbol)
+                                               for symbol in symbols])
             self._symbol_table_buffer += current_symbols_buffer
             self._symbol_table[column_index] = symbols
             self._symbol_table_nullability[column_index] = contains_none
@@ -380,3 +381,38 @@ class QvdFileWriter:
         self._build_index_table()
         self._build_header()
         self._write_data()
+
+    @staticmethod
+    def _get_symbol_byte_representation(value: QvdValue) -> bytes:
+        """
+        Returns the byte representation of a symbol value.
+
+        :param value: The symbol value to convert.
+        :return: The byte representation of the symbol value.
+        """
+        if isinstance(value, IntegerValue):
+            return b"\01" + value.calculation_value.to_bytes(4, byteorder="little", signed=True)
+        elif isinstance(value, DoubleValue):
+            return b"\02" + struct.pack("<d", value.calculation_value)
+        elif isinstance(value, StringValue):
+            return b"\04" + str.encode(value.calculation_value, encoding="utf-8") + b"\0"
+        elif isinstance(value, DualIntegerValue):
+            return (b"\05" +
+                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
+                    str.encode(value.display_value, encoding="utf-8") +
+                    b"\0")
+        elif isinstance(value, DualDoubleValue):
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(value.display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, TimeValue):
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(value.display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, DateValue):
+            return (b"\05" +
+                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
+                    str.encode(value.display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, TimestampValue):
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(value.display_value, encoding="utf-8") + b"\0")
+        else:
+            raise ValueError("Unsupported symbol value type.")

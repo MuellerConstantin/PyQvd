@@ -3,7 +3,6 @@ Module contains the core classes and functions for dealing with QVD files. The m
 :class:`QvdTable` class, which represents a the internal data table of a QVD file.
 """
 
-import struct
 from copy import deepcopy
 import datetime as dt
 from functools import cmp_to_key
@@ -95,16 +94,6 @@ class QvdValue(metaclass=ABCMeta):
         and sorting operations.
 
         :return: The calculation value.
-        """
-
-    @property
-    @abstractmethod
-    def byte_representation(self) -> bytes:
-        """
-        Returns the byte representation of this QVD value. This representation is used for
-        writing the value to a QVD file.
-
-        :return: The byte representation.
         """
 
     def __eq__(self, __value: object) -> bool:
@@ -220,10 +209,6 @@ class IntegerValue(QvdValue):
     def calculation_value(self) -> int:
         return self._value
 
-    @property
-    def byte_representation(self) -> bytes:
-        return b"\01" + self._value.to_bytes(4, byteorder="little", signed=True)
-
 class DoubleValue(QvdValue):
     """
     Represents a double value in a QVD file.
@@ -244,10 +229,6 @@ class DoubleValue(QvdValue):
     def calculation_value(self) -> float:
         return self._value
 
-    @property
-    def byte_representation(self) -> bytes:
-        return b"\02" + struct.pack("<d", self._value)
-
 class StringValue(QvdValue):
     """
     Represents a string value in a QVD file.
@@ -267,10 +248,6 @@ class StringValue(QvdValue):
     @property
     def calculation_value(self) -> str:
         return self._value
-
-    @property
-    def byte_representation(self) -> bytes:
-        return b"\04" + str.encode(self._value, encoding="utf-8") + b"\0"
 
 class DualIntegerValue(QvdValue):
     """
@@ -299,13 +276,6 @@ class DualIntegerValue(QvdValue):
     def calculation_value(self) -> int:
         return self._int_value
 
-    @property
-    def byte_representation(self) -> bytes:
-        return (b"\05" +
-                self._int_value.to_bytes(4, byteorder="little", signed=True) +
-                str.encode(self._string_value, encoding="utf-8") +
-                b"\0")
-
 class DualDoubleValue(QvdValue):
     """
     Represents a dual value with a double value and a string value in a QVD file.
@@ -332,11 +302,6 @@ class DualDoubleValue(QvdValue):
     @property
     def calculation_value(self) -> float:
         return self._double_value
-
-    @property
-    def byte_representation(self) -> bytes:
-        return (b"\06" + struct.pack("<d", self._double_value) +
-                str.encode(self._string_value, encoding="utf-8") + b"\0")
 
 class TimeValue(DualDoubleValue):
     """
@@ -381,6 +346,19 @@ class TimeValue(DualDoubleValue):
         :return: The time value.
         """
         serial_number = TimeValue._time_to_serial_number(time)
+        display_value = time.strftime("%H:%M:%S")
+
+        return TimeValue(serial_number, display_value)
+
+    @staticmethod
+    def from_serial_number(serial_number: float) -> "TimeValue":
+        """
+        Creates a new time value from a serial number.
+
+        :param serial_number: The serial number representing the time.
+        :return: The time value.
+        """
+        time = TimeValue._serial_number_to_time(serial_number)
         display_value = time.strftime("%H:%M:%S")
 
         return TimeValue(serial_number, display_value)
@@ -433,6 +411,19 @@ class DateValue(DualIntegerValue):
 
         return DateValue(serial_number, display_value)
 
+    @staticmethod
+    def from_serial_number(serial_number: int) -> "DateValue":
+        """
+        Creates a new date value from a serial number.
+
+        :param serial_number: The serial number representing the date.
+        :return: The date value.
+        """
+        date = DateValue._serial_number_to_date(serial_number)
+        display_value = date.strftime("%Y-%m-%d")
+
+        return DateValue(serial_number, display_value)
+
 class TimestampValue(DualDoubleValue):
     """
     Represents a timestamp value in a QVD file.
@@ -477,6 +468,19 @@ class TimestampValue(DualDoubleValue):
         :return: The timestamp value.
         """
         serial_number = TimestampValue._timestamp_to_serial_number(timestamp)
+        display_value = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+        return TimestampValue(serial_number, display_value)
+
+    @staticmethod
+    def from_serial_number(serial_number: float) -> "TimestampValue":
+        """
+        Creates a new timestamp value from a serial number.
+
+        :param serial_number: The serial number representing the timestamp.
+        :return: The timestamp value.
+        """
+        timestamp = TimestampValue._serial_number_to_timestamp(serial_number)
         display_value = timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         return TimestampValue(serial_number, display_value)
