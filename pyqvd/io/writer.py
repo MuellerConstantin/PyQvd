@@ -390,7 +390,26 @@ class QvdFileWriter:
         :param value: The symbol value to convert.
         :return: The byte representation of the symbol value.
         """
-        if isinstance(value, IntegerValue):
+        if isinstance(value, TimeValue):
+            # Recreate display value to ensure uniform formatting
+            display_value = value.time.strftime("%H:%M:%S")
+
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, DateValue):
+            # Recreate display value to ensure uniform formatting
+            display_value = value.date.strftime("%Y-%m-%d")
+
+            return (b"\05" +
+                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
+                    str.encode(display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, TimestampValue):
+            # Recreate display value to ensure uniform formatting
+            display_value = value.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, IntegerValue):
             return b"\01" + value.calculation_value.to_bytes(4, byteorder="little", signed=True)
         elif isinstance(value, DoubleValue):
             return b"\02" + struct.pack("<d", value.calculation_value)
@@ -402,16 +421,6 @@ class QvdFileWriter:
                     str.encode(value.display_value, encoding="utf-8") +
                     b"\0")
         elif isinstance(value, DualDoubleValue):
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(value.display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, TimeValue):
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(value.display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, DateValue):
-            return (b"\05" +
-                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
-                    str.encode(value.display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, TimestampValue):
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(value.display_value, encoding="utf-8") + b"\0")
         else:

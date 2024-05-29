@@ -347,11 +347,11 @@ def test_qvd_table_copy():
 
     assert new_tbl is not None
     assert new_tbl.shape == (1, 2)
-    assert new_tbl[0, "Key"].display_value == 1
+    assert new_tbl[0, "Key"].calculation_value == 1
 
     new_tbl[0, "Key"] = IntegerValue(2)
 
-    assert tbl.at(0, "Key").display_value == 2
+    assert tbl.at(0, "Key").calculation_value == 2
 
 def test_qvd_table_copy_deep():
     """
@@ -369,11 +369,11 @@ def test_qvd_table_copy_deep():
 
     assert new_tbl is not None
     assert new_tbl.shape == (1, 2)
-    assert new_tbl[0, "Key"].display_value == 1
+    assert new_tbl[0, "Key"].calculation_value == 1
 
     new_tbl[0, "Key"] = IntegerValue(2)
 
-    assert tbl.at(0, "Key").display_value == 1
+    assert tbl.at(0, "Key").calculation_value == 1
 
 def test_qvd_table_get_by_tuple():
     """
@@ -394,7 +394,7 @@ def test_qvd_table_get_by_tuple():
     value = tbl.get((0, "Key"))
 
     assert value is not None
-    assert value.display_value == 1
+    assert value.calculation_value == 1
 
 def test_qvd_table_get_by_invalid_tuple():
     """
@@ -436,11 +436,11 @@ def test_qvd_table_get_by_column():
 
     assert values is not None
     assert len(values) == 5
-    assert values[0].display_value == 1
-    assert values[1].display_value == 2
-    assert values[2].display_value == 3
-    assert values[3].display_value == 4
-    assert values[4].display_value == 5
+    assert values[0].calculation_value == 1
+    assert values[1].calculation_value == 2
+    assert values[2].calculation_value == 3
+    assert values[3].calculation_value == 4
+    assert values[4].calculation_value == 5
 
 def test_qvd_table_get_by_invalid_column():
     """
@@ -482,8 +482,8 @@ def test_qvd_table_get_by_row():
 
     assert values is not None
     assert len(values) == 2
-    assert values[0].display_value == 1
-    assert values[1].display_value == "A"
+    assert values[0].calculation_value == 1
+    assert values[1].calculation_value == "A"
 
 def test_qvd_table_get_by_invalid_row():
     """
@@ -525,10 +525,10 @@ def test_qvd_table_get_by_slice():
 
     assert values is not None
     assert len(values) == 2
-    assert values[0][0].display_value == 1
-    assert values[0][1].display_value == "A"
-    assert values[1][0].display_value == 2
-    assert values[1][1].display_value == "B"
+    assert values[0][0].calculation_value == 1
+    assert values[0][1].calculation_value == "A"
+    assert values[1][0].calculation_value == 2
+    assert values[1][1].calculation_value == "B"
 
 def test_qvd_table_getitem_by_tuple():
     """
@@ -549,7 +549,7 @@ def test_qvd_table_getitem_by_tuple():
     value = tbl[0, "Key"]
 
     assert value is not None
-    assert value.display_value == 1
+    assert value.calculation_value == 1
 
 def test_qvd_table_getitem_by_column():
     """
@@ -571,11 +571,11 @@ def test_qvd_table_getitem_by_column():
 
     assert values is not None
     assert len(values) == 5
-    assert values[0].display_value == 1
-    assert values[1].display_value == 2
-    assert values[2].display_value == 3
-    assert values[3].display_value == 4
-    assert values[4].display_value == 5
+    assert values[0].calculation_value == 1
+    assert values[1].calculation_value == 2
+    assert values[2].calculation_value == 3
+    assert values[3].calculation_value == 4
+    assert values[4].calculation_value == 5
 
 def test_qvd_table_getitem_by_row():
     """
@@ -597,8 +597,8 @@ def test_qvd_table_getitem_by_row():
 
     assert values is not None
     assert len(values) == 2
-    assert values[0].display_value == 1
-    assert values[1].display_value == "A"
+    assert values[0].calculation_value == 1
+    assert values[1].calculation_value == "A"
 
 def test_qvd_table_getitem_by_slice():
     """
@@ -620,10 +620,10 @@ def test_qvd_table_getitem_by_slice():
 
     assert values is not None
     assert len(values) == 2
-    assert values[0][0].display_value == 1
-    assert values[0][1].display_value == "A"
-    assert values[1][0].display_value == 2
-    assert values[1][1].display_value == "B"
+    assert values[0][0].calculation_value == 1
+    assert values[0][1].calculation_value == "A"
+    assert values[1][0].calculation_value == 2
+    assert values[1][1].calculation_value == "B"
 
 def test_qvd_table_set_by_column():
     """
@@ -643,11 +643,11 @@ def test_qvd_table_set_by_column():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl.set("Key", [IntegerValue(6), IntegerValue(7), IntegerValue(8), IntegerValue(9), IntegerValue(10)])
 
-    assert tbl.at(0, "Key").display_value == 6
-    assert tbl.at(1, "Key").display_value == 7
-    assert tbl.at(2, "Key").display_value == 8
-    assert tbl.at(3, "Key").display_value == 9
-    assert tbl.at(4, "Key").display_value == 10
+    assert tbl.at(0, "Key").calculation_value == 6
+    assert tbl.at(1, "Key").calculation_value == 7
+    assert tbl.at(2, "Key").calculation_value == 8
+    assert tbl.at(3, "Key").calculation_value == 9
+    assert tbl.at(4, "Key").calculation_value == 10
 
 def test_qvd_table_add_column():
     """
@@ -666,9 +666,9 @@ def test_qvd_table_add_column():
     tbl.set("New", [IntegerValue(4), IntegerValue(5), IntegerValue(6)])
 
     assert tbl.shape == (3, 3)
-    assert tbl.at(0, "New").display_value == 4
-    assert tbl.at(1, "New").display_value == 5
-    assert tbl.at(2, "New").display_value == 6
+    assert tbl.at(0, "New").calculation_value == 4
+    assert tbl.at(1, "New").calculation_value == 5
+    assert tbl.at(2, "New").calculation_value == 6
 
 def test_qvd_table_set_by_column_with_invalid_shape():
     """
@@ -708,8 +708,8 @@ def test_qvd_table_set_by_row():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl.set(0, [IntegerValue(6), StringValue("F")])
 
-    assert tbl.at(0, "Key").display_value == 6
-    assert tbl.at(0, "Value").display_value == "F"
+    assert tbl.at(0, "Key").calculation_value == 6
+    assert tbl.at(0, "Value").calculation_value == "F"
 
 def test_qvd_table_set_by_invalid_row():
     """
@@ -775,12 +775,12 @@ def test_qvd_table_set_by_slice():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl.set(slice(1, 4), new_data)
 
-    assert tbl.at(1, "Key").display_value == 6
-    assert tbl.at(1, "Value").display_value == "F"
-    assert tbl.at(2, "Key").display_value == 7
-    assert tbl.at(2, "Value").display_value == "G"
-    assert tbl.at(3, "Key").display_value == 8
-    assert tbl.at(3, "Value").display_value == "H"
+    assert tbl.at(1, "Key").calculation_value == 6
+    assert tbl.at(1, "Value").calculation_value == "F"
+    assert tbl.at(2, "Key").calculation_value == 7
+    assert tbl.at(2, "Value").calculation_value == "G"
+    assert tbl.at(3, "Key").calculation_value == 8
+    assert tbl.at(3, "Value").calculation_value == "H"
 
 def test_qvd_table_set_by_slice_with_invalid_shape():
     """
@@ -825,11 +825,11 @@ def test_qvd_table_setitem_by_column():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl["Key"] = [IntegerValue(6), IntegerValue(7), IntegerValue(8), IntegerValue(9), IntegerValue(10)]
 
-    assert tbl.at(0, "Key").display_value == 6
-    assert tbl.at(1, "Key").display_value == 7
-    assert tbl.at(2, "Key").display_value == 8
-    assert tbl.at(3, "Key").display_value == 9
-    assert tbl.at(4, "Key").display_value == 10
+    assert tbl.at(0, "Key").calculation_value == 6
+    assert tbl.at(1, "Key").calculation_value == 7
+    assert tbl.at(2, "Key").calculation_value == 8
+    assert tbl.at(3, "Key").calculation_value == 9
+    assert tbl.at(4, "Key").calculation_value == 10
 
 def test_qvd_table_setitem_add_column():
     """
@@ -848,9 +848,9 @@ def test_qvd_table_setitem_add_column():
     tbl["New"] = [IntegerValue(4), IntegerValue(5), IntegerValue(6)]
 
     assert tbl.shape == (3, 3)
-    assert tbl.at(0, "New").display_value == 4
-    assert tbl.at(1, "New").display_value == 5
-    assert tbl.at(2, "New").display_value == 6
+    assert tbl.at(0, "New").calculation_value == 4
+    assert tbl.at(1, "New").calculation_value == 5
+    assert tbl.at(2, "New").calculation_value == 6
 
 def test_qvd_table_setitem_by_row():
     """
@@ -870,8 +870,8 @@ def test_qvd_table_setitem_by_row():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl[0] = [IntegerValue(6), StringValue("F")]
 
-    assert tbl.at(0, "Key").display_value == 6
-    assert tbl.at(0, "Value").display_value == "F"
+    assert tbl.at(0, "Key").calculation_value == 6
+    assert tbl.at(0, "Value").calculation_value == "F"
 
 def test_qvd_table_setitem_by_slice():
     """
@@ -897,12 +897,12 @@ def test_qvd_table_setitem_by_slice():
     tbl = QvdTable.from_dict(raw_tbl)
     tbl[1:4] = new_data
 
-    assert tbl.at(1, "Key").display_value == 6
-    assert tbl.at(1, "Value").display_value == "F"
-    assert tbl.at(2, "Key").display_value == 7
-    assert tbl.at(2, "Value").display_value == "G"
-    assert tbl.at(3, "Key").display_value == 8
-    assert tbl.at(3, "Value").display_value == "H"
+    assert tbl.at(1, "Key").calculation_value == 6
+    assert tbl.at(1, "Value").calculation_value == "F"
+    assert tbl.at(2, "Key").calculation_value == 7
+    assert tbl.at(2, "Value").calculation_value == "G"
+    assert tbl.at(3, "Key").calculation_value == 8
+    assert tbl.at(3, "Value").calculation_value == "H"
 
 def test_qvd_table_rename_columns():
     """
@@ -937,8 +937,8 @@ def test_qvd_table_append_row():
     tbl.append([IntegerValue(2), StringValue("B")])
 
     assert tbl.shape == (2, 2)
-    assert tbl.at(1, "Key").display_value == 2
-    assert tbl.at(1, "Value").display_value == "B"
+    assert tbl.at(1, "Key").calculation_value == 2
+    assert tbl.at(1, "Value").calculation_value == "B"
 
 def test_qvd_table_append_row_with_invalid_shape():
     """
@@ -974,8 +974,8 @@ def test_qvd_table_insert_row():
     tbl.insert(0, [IntegerValue(1), StringValue("A")])
 
     assert tbl.shape == (5, 2)
-    assert tbl.at(0, "Key").display_value == 1
-    assert tbl.at(0, "Value").display_value == "A"
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(0, "Value").calculation_value == "A"
 
 def test_qvd_table_insert_row_with_invalid_shape():
     """
@@ -1128,9 +1128,9 @@ def test_qvd_table_drop_row():
     new_tb = tbl.drop(1)
 
     assert new_tb.shape == (3, 2)
-    assert new_tb.at(0, "Key").display_value == 1
-    assert new_tb.at(1, "Key").display_value == 3
-    assert new_tb.at(2, "Key").display_value == 4
+    assert new_tb.at(0, "Key").calculation_value == 1
+    assert new_tb.at(1, "Key").calculation_value == 3
+    assert new_tb.at(2, "Key").calculation_value == 4
 
 def test_qvd_table_drop_row_inplace():
     """
@@ -1150,9 +1150,9 @@ def test_qvd_table_drop_row_inplace():
     tbl.drop(1, inplace=True)
 
     assert tbl.shape == (3, 2)
-    assert tbl.at(0, "Key").display_value == 1
-    assert tbl.at(1, "Key").display_value == 3
-    assert tbl.at(2, "Key").display_value == 4
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(1, "Key").calculation_value == 3
+    assert tbl.at(2, "Key").calculation_value == 4
 
 def test_qvd_table_drop_row_with_invalid_index():
     """
@@ -1191,8 +1191,8 @@ def test_qvd_table_drop_row_list():
     new_tb = tbl.drop([0, 2])
 
     assert new_tb.shape == (2, 2)
-    assert new_tb.at(0, "Key").display_value == 2
-    assert new_tb.at(1, "Key").display_value == 4
+    assert new_tb.at(0, "Key").calculation_value == 2
+    assert new_tb.at(1, "Key").calculation_value == 4
 
 def test_qvd_table_drop_row_list_with_invalid_index():
     """
@@ -1234,9 +1234,9 @@ def test_qvd_table_filter_by():
     new_tbl = tbl.filter_by("Key", lambda x: x.calculation_value in [1, 3, 5])
 
     assert new_tbl.shape == (3, 2)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 3
-    assert new_tbl.at(2, "Key").display_value == 5
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 3
+    assert new_tbl.at(2, "Key").calculation_value == 5
 
 def test_qvd_table_filter_by_with_invalid_column():
     """
@@ -1277,9 +1277,9 @@ def test_qvd_table_filter_by_inplace():
     tbl.filter_by("Key", lambda x: x.calculation_value in [1, 3, 5], inplace=True)
 
     assert tbl.shape == (3, 2)
-    assert tbl.at(0, "Key").display_value == 1
-    assert tbl.at(1, "Key").display_value == 3
-    assert tbl.at(2, "Key").display_value == 5
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(1, "Key").calculation_value == 3
+    assert tbl.at(2, "Key").calculation_value == 5
 
 def test_qvd_table_sort_by_asc():
     """
@@ -1300,11 +1300,11 @@ def test_qvd_table_sort_by_asc():
     new_tbl = tbl.sort_by("Key")
 
     assert new_tbl.shape == (5, 2)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 4
-    assert new_tbl.at(4, "Key").display_value == 5
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 4
+    assert new_tbl.at(4, "Key").calculation_value == 5
 
 def test_qvd_table_sort_by_desc():
     """
@@ -1325,11 +1325,11 @@ def test_qvd_table_sort_by_desc():
     new_tbl = tbl.sort_by("Key", ascending=False)
 
     assert new_tbl.shape == (5, 2)
-    assert new_tbl.at(0, "Key").display_value == 5
-    assert new_tbl.at(1, "Key").display_value == 4
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 2
-    assert new_tbl.at(4, "Key").display_value == 1
+    assert new_tbl.at(0, "Key").calculation_value == 5
+    assert new_tbl.at(1, "Key").calculation_value == 4
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 2
+    assert new_tbl.at(4, "Key").calculation_value == 1
 
 def test_qvd_table_sort_by_inplace():
     """
@@ -1350,11 +1350,11 @@ def test_qvd_table_sort_by_inplace():
     tbl.sort_by("Key", inplace=True)
 
     assert tbl.shape == (5, 2)
-    assert tbl.at(0, "Key").display_value == 1
-    assert tbl.at(1, "Key").display_value == 2
-    assert tbl.at(2, "Key").display_value == 3
-    assert tbl.at(3, "Key").display_value == 4
-    assert tbl.at(4, "Key").display_value == 5
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(1, "Key").calculation_value == 2
+    assert tbl.at(2, "Key").calculation_value == 3
+    assert tbl.at(3, "Key").calculation_value == 4
+    assert tbl.at(4, "Key").calculation_value == 5
 
 def test_qvd_table_sort_by_custom_comparator():
     """
@@ -1376,11 +1376,11 @@ def test_qvd_table_sort_by_custom_comparator():
                                              -1 if x.calculation_value < y.calculation_value else 0))
 
     assert new_tbl.shape == (5, 2)
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
-    assert new_tbl.at(2, "Value").display_value == "C"
-    assert new_tbl.at(3, "Value").display_value == "D"
-    assert new_tbl.at(4, "Value").display_value == "E"
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
+    assert new_tbl.at(3, "Value").calculation_value == "D"
+    assert new_tbl.at(4, "Value").calculation_value == "E"
 
 def test_qvd_table_concat():
     """
@@ -1407,10 +1407,10 @@ def test_qvd_table_concat():
     new_tbl = tbl1.concat(tbl2)
 
     assert new_tbl.shape == (4, 2)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 4
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 4
 
 def test_qvd_table_concat_inplace():
     """
@@ -1437,10 +1437,10 @@ def test_qvd_table_concat_inplace():
     tbl1.concat(tbl2, inplace=True)
 
     assert tbl1.shape == (4, 2)
-    assert tbl1.at(0, "Key").display_value == 1
-    assert tbl1.at(1, "Key").display_value == 2
-    assert tbl1.at(2, "Key").display_value == 3
-    assert tbl1.at(3, "Key").display_value == 4
+    assert tbl1.at(0, "Key").calculation_value == 1
+    assert tbl1.at(1, "Key").calculation_value == 2
+    assert tbl1.at(2, "Key").calculation_value == 3
+    assert tbl1.at(3, "Key").calculation_value == 4
 
 def test_qvd_table_concat_different_columns():
     """
@@ -1467,16 +1467,16 @@ def test_qvd_table_concat_different_columns():
     new_tbl = tbl1.concat(tbl2)
 
     assert new_tbl.shape == (4, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 4
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 4
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
     assert new_tbl.at(0, "New") is None
     assert new_tbl.at(1, "New") is None
-    assert new_tbl.at(2, "New").display_value == "C"
-    assert new_tbl.at(3, "New").display_value == "D"
+    assert new_tbl.at(2, "New").calculation_value == "C"
+    assert new_tbl.at(3, "New").calculation_value == "D"
 
 def test_qvd_table_left_join():
     """
@@ -1505,15 +1505,15 @@ def test_qvd_table_left_join():
     new_tbl = tbl1.join(tbl2, on="Key", how="left")
 
     assert new_tbl.shape == (3, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
-    assert new_tbl.at(2, "Value").display_value == "C"
-    assert new_tbl.at(0, "New").display_value == "X"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
+    assert new_tbl.at(0, "New").calculation_value == "X"
     assert new_tbl.at(1, "New") is None
-    assert new_tbl.at(2, "New").display_value == "Y"
+    assert new_tbl.at(2, "New").calculation_value == "Y"
 
 def test_qvd_table_left_join_inplace():
     """
@@ -1542,15 +1542,15 @@ def test_qvd_table_left_join_inplace():
     tbl1.join(tbl2, on="Key", how="left", inplace=True)
 
     assert tbl1.shape == (3, 3)
-    assert tbl1.at(0, "Key").display_value == 1
-    assert tbl1.at(1, "Key").display_value == 2
-    assert tbl1.at(2, "Key").display_value == 3
-    assert tbl1.at(0, "Value").display_value == "A"
-    assert tbl1.at(1, "Value").display_value == "B"
-    assert tbl1.at(2, "Value").display_value == "C"
-    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(0, "Key").calculation_value == 1
+    assert tbl1.at(1, "Key").calculation_value == 2
+    assert tbl1.at(2, "Key").calculation_value == 3
+    assert tbl1.at(0, "Value").calculation_value == "A"
+    assert tbl1.at(1, "Value").calculation_value == "B"
+    assert tbl1.at(2, "Value").calculation_value == "C"
+    assert tbl1.at(0, "New").calculation_value == "X"
     assert tbl1.at(1, "New") is None
-    assert tbl1.at(2, "New").display_value == "Y"
+    assert tbl1.at(2, "New").calculation_value == "Y"
 
 def test_qvd_table_left_join_with_multiple_keys():
     """
@@ -1579,18 +1579,18 @@ def test_qvd_table_left_join_with_multiple_keys():
     new_tbl = tbl1.join(tbl2, on=["Key1", "Key2"], how="left")
 
     assert new_tbl.shape == (3, 4)
-    assert new_tbl.at(0, "Key1").display_value == 1
-    assert new_tbl.at(1, "Key1").display_value == 2
-    assert new_tbl.at(2, "Key1").display_value == 3
-    assert new_tbl.at(0, "Key2").display_value == 1
-    assert new_tbl.at(1, "Key2").display_value == 2
-    assert new_tbl.at(2, "Key2").display_value == 3
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
-    assert new_tbl.at(2, "Value").display_value == "C"
-    assert new_tbl.at(0, "New").display_value == "X"
+    assert new_tbl.at(0, "Key1").calculation_value == 1
+    assert new_tbl.at(1, "Key1").calculation_value == 2
+    assert new_tbl.at(2, "Key1").calculation_value == 3
+    assert new_tbl.at(0, "Key2").calculation_value == 1
+    assert new_tbl.at(1, "Key2").calculation_value == 2
+    assert new_tbl.at(2, "Key2").calculation_value == 3
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
+    assert new_tbl.at(0, "New").calculation_value == "X"
     assert new_tbl.at(1, "New") is None
-    assert new_tbl.at(2, "New").display_value == "Z"
+    assert new_tbl.at(2, "New").calculation_value == "Z"
 
 def test_qvd_table_left_join_overlapping_columns():
     """
@@ -1619,15 +1619,15 @@ def test_qvd_table_left_join_overlapping_columns():
     new_tbl = tbl1.join(tbl2, on="Key", how="left", lsuffix="_l", rsuffix="_r")
 
     assert new_tbl.shape == (3, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(0, "Value_l").display_value == "A"
-    assert new_tbl.at(1, "Value_l").display_value == "B"
-    assert new_tbl.at(2, "Value_l").display_value == "C"
-    assert new_tbl.at(0, "Value_r").display_value == "X"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(0, "Value_l").calculation_value == "A"
+    assert new_tbl.at(1, "Value_l").calculation_value == "B"
+    assert new_tbl.at(2, "Value_l").calculation_value == "C"
+    assert new_tbl.at(0, "Value_r").calculation_value == "X"
     assert new_tbl.at(1, "Value_r") is None
-    assert new_tbl.at(2, "Value_r").display_value == "Y"
+    assert new_tbl.at(2, "Value_r").calculation_value == "Y"
 
 def test_qvd_table_left_join_overlapping_columns_without_suffixes():
     """
@@ -1684,15 +1684,15 @@ def test_qvd_table_right_join():
     new_tbl = tbl1.join(tbl2, on="Key", how="right")
 
     assert new_tbl.shape == (3, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 3
-    assert new_tbl.at(2, "Key").display_value == 4
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "C"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 3
+    assert new_tbl.at(2, "Key").calculation_value == 4
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "C"
     assert new_tbl.at(2, "Value") is None
-    assert new_tbl.at(0, "New").display_value == "X"
-    assert new_tbl.at(1, "New").display_value == "Y"
-    assert new_tbl.at(2, "New").display_value == "Z"
+    assert new_tbl.at(0, "New").calculation_value == "X"
+    assert new_tbl.at(1, "New").calculation_value == "Y"
+    assert new_tbl.at(2, "New").calculation_value == "Z"
 
 def test_qvd_table_right_join_inplace():
     """
@@ -1721,15 +1721,15 @@ def test_qvd_table_right_join_inplace():
     tbl1.join(tbl2, on="Key", how="right", inplace=True)
 
     assert tbl1.shape == (3, 3)
-    assert tbl1.at(0, "Key").display_value == 1
-    assert tbl1.at(1, "Key").display_value == 3
-    assert tbl1.at(2, "Key").display_value == 4
-    assert tbl1.at(0, "Value").display_value == "A"
-    assert tbl1.at(1, "Value").display_value == "C"
+    assert tbl1.at(0, "Key").calculation_value == 1
+    assert tbl1.at(1, "Key").calculation_value == 3
+    assert tbl1.at(2, "Key").calculation_value == 4
+    assert tbl1.at(0, "Value").calculation_value == "A"
+    assert tbl1.at(1, "Value").calculation_value == "C"
     assert tbl1.at(2, "Value") is None
-    assert tbl1.at(0, "New").display_value == "X"
-    assert tbl1.at(1, "New").display_value == "Y"
-    assert tbl1.at(2, "New").display_value == "Z"
+    assert tbl1.at(0, "New").calculation_value == "X"
+    assert tbl1.at(1, "New").calculation_value == "Y"
+    assert tbl1.at(2, "New").calculation_value == "Z"
 
 def test_qvd_table_right_join_with_overlapping_columns():
     """
@@ -1758,15 +1758,15 @@ def test_qvd_table_right_join_with_overlapping_columns():
     new_tbl = tbl1.join(tbl2, on="Key", how="right", lsuffix="_l", rsuffix="_r")
 
     assert new_tbl.shape == (3, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 3
-    assert new_tbl.at(2, "Key").display_value == 4
-    assert new_tbl.at(0, "Value_l").display_value == "A"
-    assert new_tbl.at(1, "Value_l").display_value == "C"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 3
+    assert new_tbl.at(2, "Key").calculation_value == 4
+    assert new_tbl.at(0, "Value_l").calculation_value == "A"
+    assert new_tbl.at(1, "Value_l").calculation_value == "C"
     assert new_tbl.at(2, "Value_l") is None
-    assert new_tbl.at(0, "Value_r").display_value == "X"
-    assert new_tbl.at(1, "Value_r").display_value == "Y"
-    assert new_tbl.at(2, "Value_r").display_value == "Z"
+    assert new_tbl.at(0, "Value_r").calculation_value == "X"
+    assert new_tbl.at(1, "Value_r").calculation_value == "Y"
+    assert new_tbl.at(2, "Value_r").calculation_value == "Z"
 
 def test_qvd_table_right_join_with_multiple_keys():
     """
@@ -1795,18 +1795,18 @@ def test_qvd_table_right_join_with_multiple_keys():
     new_tbl = tbl1.join(tbl2, on=["Key1", "Key2"], how="right")
 
     assert new_tbl.shape == (3, 4)
-    assert new_tbl.at(0, "Key1").display_value == 1
-    assert new_tbl.at(1, "Key1").display_value == 2
-    assert new_tbl.at(2, "Key1").display_value == 3
-    assert new_tbl.at(0, "Key2").display_value == 1
-    assert new_tbl.at(1, "Key2").display_value == 4
-    assert new_tbl.at(2, "Key2").display_value == 3
-    assert new_tbl.at(0, "Value").display_value == "A"
+    assert new_tbl.at(0, "Key1").calculation_value == 1
+    assert new_tbl.at(1, "Key1").calculation_value == 2
+    assert new_tbl.at(2, "Key1").calculation_value == 3
+    assert new_tbl.at(0, "Key2").calculation_value == 1
+    assert new_tbl.at(1, "Key2").calculation_value == 4
+    assert new_tbl.at(2, "Key2").calculation_value == 3
+    assert new_tbl.at(0, "Value").calculation_value == "A"
     assert new_tbl.at(1, "Value") is None
-    assert new_tbl.at(2, "Value").display_value == "C"
-    assert new_tbl.at(0, "New").display_value == "X"
-    assert new_tbl.at(1, "New").display_value == "Y"
-    assert new_tbl.at(2, "New").display_value == "Z"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
+    assert new_tbl.at(0, "New").calculation_value == "X"
+    assert new_tbl.at(1, "New").calculation_value == "Y"
+    assert new_tbl.at(2, "New").calculation_value == "Z"
 
 def test_qvd_table_inner_join():
     """
@@ -1835,12 +1835,12 @@ def test_qvd_table_inner_join():
     new_tbl = tbl1.join(tbl2, on="Key", how="inner")
 
     assert new_tbl.shape == (2, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 3
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "C"
-    assert new_tbl.at(0, "New").display_value == "X"
-    assert new_tbl.at(1, "New").display_value == "Y"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 3
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "C"
+    assert new_tbl.at(0, "New").calculation_value == "X"
+    assert new_tbl.at(1, "New").calculation_value == "Y"
 
 def test_qvd_table_inner_join_inplace():
     """
@@ -1869,12 +1869,12 @@ def test_qvd_table_inner_join_inplace():
     tbl1.join(tbl2, on="Key", how="inner", inplace=True)
 
     assert tbl1.shape == (2, 3)
-    assert tbl1.at(0, "Key").display_value == 1
-    assert tbl1.at(1, "Key").display_value == 3
-    assert tbl1.at(0, "Value").display_value == "A"
-    assert tbl1.at(1, "Value").display_value == "C"
-    assert tbl1.at(0, "New").display_value == "X"
-    assert tbl1.at(1, "New").display_value == "Y"
+    assert tbl1.at(0, "Key").calculation_value == 1
+    assert tbl1.at(1, "Key").calculation_value == 3
+    assert tbl1.at(0, "Value").calculation_value == "A"
+    assert tbl1.at(1, "Value").calculation_value == "C"
+    assert tbl1.at(0, "New").calculation_value == "X"
+    assert tbl1.at(1, "New").calculation_value == "Y"
 
 def test_qvd_table_inner_join_with_multiple_keys():
     """
@@ -1903,14 +1903,14 @@ def test_qvd_table_inner_join_with_multiple_keys():
     new_tbl = tbl1.join(tbl2, on=["Key1", "Key2"], how="inner")
 
     assert new_tbl.shape == (2, 4)
-    assert new_tbl.at(0, "Key1").display_value == 1
-    assert new_tbl.at(1, "Key1").display_value == 3
-    assert new_tbl.at(0, "Key2").display_value == 1
-    assert new_tbl.at(1, "Key2").display_value == 3
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "C"
-    assert new_tbl.at(0, "New").display_value == "X"
-    assert new_tbl.at(1, "New").display_value == "Z"
+    assert new_tbl.at(0, "Key1").calculation_value == 1
+    assert new_tbl.at(1, "Key1").calculation_value == 3
+    assert new_tbl.at(0, "Key2").calculation_value == 1
+    assert new_tbl.at(1, "Key2").calculation_value == 3
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "C"
+    assert new_tbl.at(0, "New").calculation_value == "X"
+    assert new_tbl.at(1, "New").calculation_value == "Z"
 
 def test_qvd_table_inner_join_overlapping_columns():
     """
@@ -1939,12 +1939,12 @@ def test_qvd_table_inner_join_overlapping_columns():
     new_tbl = tbl1.join(tbl2, on="Key", how="inner", lsuffix="_l", rsuffix="_r")
 
     assert new_tbl.shape == (2, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 3
-    assert new_tbl.at(0, "Value_l").display_value == "A"
-    assert new_tbl.at(1, "Value_l").display_value == "C"
-    assert new_tbl.at(0, "Value_r").display_value == "X"
-    assert new_tbl.at(1, "Value_r").display_value == "Y"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 3
+    assert new_tbl.at(0, "Value_l").calculation_value == "A"
+    assert new_tbl.at(1, "Value_l").calculation_value == "C"
+    assert new_tbl.at(0, "Value_r").calculation_value == "X"
+    assert new_tbl.at(1, "Value_r").calculation_value == "Y"
 
 def test_qvd_table_outer_join():
     """
@@ -1973,18 +1973,18 @@ def test_qvd_table_outer_join():
     new_tbl = tbl1.join(tbl2, on="Key", how="outer")
 
     assert new_tbl.shape == (4, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 4
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
-    assert new_tbl.at(2, "Value").display_value == "C"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 4
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
     assert new_tbl.at(3, "Value") is None
-    assert new_tbl.at(0, "New").display_value == "X"
+    assert new_tbl.at(0, "New").calculation_value == "X"
     assert new_tbl.at(1, "New") is None
-    assert new_tbl.at(2, "New").display_value == "Y"
-    assert new_tbl.at(3, "New").display_value == "Z"
+    assert new_tbl.at(2, "New").calculation_value == "Y"
+    assert new_tbl.at(3, "New").calculation_value == "Z"
 
 def test_qvd_table_outer_join_inplace():
     """
@@ -2013,18 +2013,18 @@ def test_qvd_table_outer_join_inplace():
     tbl1.join(tbl2, on="Key", how="outer", inplace=True)
 
     assert tbl1.shape == (4, 3)
-    assert tbl1.at(0, "Key").display_value == 1
-    assert tbl1.at(1, "Key").display_value == 2
-    assert tbl1.at(2, "Key").display_value == 3
-    assert tbl1.at(3, "Key").display_value == 4
-    assert tbl1.at(0, "Value").display_value == "A"
-    assert tbl1.at(1, "Value").display_value == "B"
-    assert tbl1.at(2, "Value").display_value == "C"
+    assert tbl1.at(0, "Key").calculation_value == 1
+    assert tbl1.at(1, "Key").calculation_value == 2
+    assert tbl1.at(2, "Key").calculation_value == 3
+    assert tbl1.at(3, "Key").calculation_value == 4
+    assert tbl1.at(0, "Value").calculation_value == "A"
+    assert tbl1.at(1, "Value").calculation_value == "B"
+    assert tbl1.at(2, "Value").calculation_value == "C"
     assert tbl1.at(3, "Value") is None
-    assert tbl1.at(0, "New").display_value == "X"
+    assert tbl1.at(0, "New").calculation_value == "X"
     assert tbl1.at(1, "New") is None
-    assert tbl1.at(2, "New").display_value == "Y"
-    assert tbl1.at(3, "New").display_value == "Z"
+    assert tbl1.at(2, "New").calculation_value == "Y"
+    assert tbl1.at(3, "New").calculation_value == "Z"
 
 def test_qvd_table_outer_join_with_multiple_keys():
     """
@@ -2053,22 +2053,22 @@ def test_qvd_table_outer_join_with_multiple_keys():
     new_tbl = tbl1.join(tbl2, on=["Key1", "Key2"], how="outer")
 
     assert new_tbl.shape == (4, 4)
-    assert new_tbl.at(0, "Key1").display_value == 1
-    assert new_tbl.at(1, "Key1").display_value == 2
-    assert new_tbl.at(2, "Key1").display_value == 3
-    assert new_tbl.at(3, "Key1").display_value == 2
-    assert new_tbl.at(0, "Key2").display_value == 1
-    assert new_tbl.at(1, "Key2").display_value == 2
-    assert new_tbl.at(2, "Key2").display_value == 3
-    assert new_tbl.at(3, "Key2").display_value == 4
-    assert new_tbl.at(0, "Value").display_value == "A"
-    assert new_tbl.at(1, "Value").display_value == "B"
-    assert new_tbl.at(2, "Value").display_value == "C"
+    assert new_tbl.at(0, "Key1").calculation_value == 1
+    assert new_tbl.at(1, "Key1").calculation_value == 2
+    assert new_tbl.at(2, "Key1").calculation_value == 3
+    assert new_tbl.at(3, "Key1").calculation_value == 2
+    assert new_tbl.at(0, "Key2").calculation_value == 1
+    assert new_tbl.at(1, "Key2").calculation_value == 2
+    assert new_tbl.at(2, "Key2").calculation_value == 3
+    assert new_tbl.at(3, "Key2").calculation_value == 4
+    assert new_tbl.at(0, "Value").calculation_value == "A"
+    assert new_tbl.at(1, "Value").calculation_value == "B"
+    assert new_tbl.at(2, "Value").calculation_value == "C"
     assert new_tbl.at(3, "Value") is None
-    assert new_tbl.at(0, "New").display_value == "X"
+    assert new_tbl.at(0, "New").calculation_value == "X"
     assert new_tbl.at(1, "New") is None
-    assert new_tbl.at(2, "New").display_value == "Z"
-    assert new_tbl.at(3, "New").display_value == "Y"
+    assert new_tbl.at(2, "New").calculation_value == "Z"
+    assert new_tbl.at(3, "New").calculation_value == "Y"
 
 def test_qvd_table_outer_join_overlapping_columns():
     """
@@ -2097,18 +2097,18 @@ def test_qvd_table_outer_join_overlapping_columns():
     new_tbl = tbl1.join(tbl2, on="Key", how="outer", lsuffix="_l", rsuffix="_r")
 
     assert new_tbl.shape == (4, 3)
-    assert new_tbl.at(0, "Key").display_value == 1
-    assert new_tbl.at(1, "Key").display_value == 2
-    assert new_tbl.at(2, "Key").display_value == 3
-    assert new_tbl.at(3, "Key").display_value == 4
-    assert new_tbl.at(0, "Value_l").display_value == "A"
-    assert new_tbl.at(1, "Value_l").display_value == "B"
-    assert new_tbl.at(2, "Value_l").display_value == "C"
+    assert new_tbl.at(0, "Key").calculation_value == 1
+    assert new_tbl.at(1, "Key").calculation_value == 2
+    assert new_tbl.at(2, "Key").calculation_value == 3
+    assert new_tbl.at(3, "Key").calculation_value == 4
+    assert new_tbl.at(0, "Value_l").calculation_value == "A"
+    assert new_tbl.at(1, "Value_l").calculation_value == "B"
+    assert new_tbl.at(2, "Value_l").calculation_value == "C"
     assert new_tbl.at(3, "Value_l") is None
-    assert new_tbl.at(0, "Value_r").display_value == "X"
+    assert new_tbl.at(0, "Value_r").calculation_value == "X"
     assert new_tbl.at(1, "Value_r") is None
-    assert new_tbl.at(2, "Value_r").display_value == "Y"
-    assert new_tbl.at(3, "Value_r").display_value == "Z"
+    assert new_tbl.at(2, "Value_r").calculation_value == "Y"
+    assert new_tbl.at(3, "Value_r").calculation_value == "Z"
 
 def test_qvd_table_at():
     """
@@ -2127,16 +2127,16 @@ def test_qvd_table_at():
 
     tbl = QvdTable.from_dict(raw_tbl)
 
-    assert tbl.at(0, "Key").display_value == 1
-    assert tbl.at(0, "Value").display_value == "A"
-    assert tbl.at(1, "Key").display_value == 2
-    assert tbl.at(1, "Value").display_value == "B"
-    assert tbl.at(2, "Key").display_value == 3
-    assert tbl.at(2, "Value").display_value == "C"
-    assert tbl.at(3, "Key").display_value == 4
-    assert tbl.at(3, "Value").display_value == "D"
-    assert tbl.at(4, "Key").display_value == 5
-    assert tbl.at(4, "Value").display_value == "E"
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(0, "Value").calculation_value == "A"
+    assert tbl.at(1, "Key").calculation_value == 2
+    assert tbl.at(1, "Value").calculation_value == "B"
+    assert tbl.at(2, "Key").calculation_value == 3
+    assert tbl.at(2, "Value").calculation_value == "C"
+    assert tbl.at(3, "Key").calculation_value == 4
+    assert tbl.at(3, "Value").calculation_value == "D"
+    assert tbl.at(4, "Key").calculation_value == 5
+    assert tbl.at(4, "Value").calculation_value == "E"
 
 def test_qvd_table_head():
     """
@@ -2158,10 +2158,10 @@ def test_qvd_table_head():
     head_tbl = tbl.head(2)
 
     assert head_tbl.shape == (2, 2)
-    assert head_tbl.at(0, "Key").display_value == 1
-    assert head_tbl.at(0, "Value").display_value == "A"
-    assert head_tbl.at(1, "Key").display_value == 2
-    assert head_tbl.at(1, "Value").display_value == "B"
+    assert head_tbl.at(0, "Key").calculation_value == 1
+    assert head_tbl.at(0, "Value").calculation_value == "A"
+    assert head_tbl.at(1, "Key").calculation_value == 2
+    assert head_tbl.at(1, "Value").calculation_value == "B"
 
 def test_qvd_table_tail():
     """
@@ -2183,10 +2183,10 @@ def test_qvd_table_tail():
     tail_tbl = tbl.tail(2)
 
     assert tail_tbl.shape == (2, 2)
-    assert tail_tbl.at(0, "Key").display_value == 4
-    assert tail_tbl.at(0, "Value").display_value == "D"
-    assert tail_tbl.at(1, "Key").display_value == 5
-    assert tail_tbl.at(1, "Value").display_value == "E"
+    assert tail_tbl.at(0, "Key").calculation_value == 4
+    assert tail_tbl.at(0, "Value").calculation_value == "D"
+    assert tail_tbl.at(1, "Key").calculation_value == 5
+    assert tail_tbl.at(1, "Value").calculation_value == "E"
 
 def test_qvd_table_eq():
     """

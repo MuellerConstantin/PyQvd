@@ -78,7 +78,7 @@ class QvdValue(metaclass=ABCMeta):
     """
     @property
     @abstractmethod
-    def display_value(self) -> object:
+    def display_value(self) -> str:
         """
         Returns the representational value of this QVD value. This value is used for display
         purposes.
@@ -202,8 +202,8 @@ class IntegerValue(QvdValue):
         self._value: int = value
 
     @property
-    def display_value(self) -> int:
-        return self._value
+    def display_value(self) -> str:
+        return f"{self._value}"
 
     @property
     def calculation_value(self) -> int:
@@ -222,8 +222,8 @@ class DoubleValue(QvdValue):
         self._value: float = value
 
     @property
-    def display_value(self) -> float:
-        return self._value
+    def display_value(self) -> str:
+        return f"{self._value}"
 
     @property
     def calculation_value(self) -> float:
