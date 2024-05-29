@@ -3,6 +3,7 @@ Tests the functionality related to persisting files.
 """
 
 import os
+import datetime as dt
 from pyqvd import QvdTable
 
 def test_write_qvd_file(tmp_path):
@@ -11,13 +12,13 @@ def test_write_qvd_file(tmp_path):
     written to file successfully.
     """
     raw_df = {
-        'columns': ['Key', 'Value'],
-        'data': [
-            [1, 'A'],
-            [2, 'B'],
-            [3, 'C'],
-            [4, 'D'],
-            [5, 'E']
+        "columns": ["Key", "Value", "Timestamp"],
+        "data": [
+            [1, "A", dt.datetime(2021, 1, 1, 0, 0, 0)],
+            [2, "B", dt.datetime(2021, 1, 2, 0, 0, 0)],
+            [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0)],
+            [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0)],
+            [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0)]
         ]
     }
 
@@ -26,34 +27,34 @@ def test_write_qvd_file(tmp_path):
     assert df is not None
     assert df.shape is not None
     assert df.shape[0] == 5
-    assert df.shape[1] == 2
+    assert df.shape[1] == 3
     assert df.columns is not None
-    assert len(df.columns) == 2
+    assert len(df.columns) == 3
     assert df.data is not None
     assert len(df.data) == 5
-    assert df.head(2).shape == (2, 2)
+    assert df.head(2).shape == (2, 3)
 
-    df.to_qvd(str(tmp_path / 'written.qvd'))
+    df.to_qvd(str(tmp_path / "written.qvd"))
 
-    assert os.path.exists(str(tmp_path / 'written.qvd'))
-    assert os.path.getsize(str(tmp_path / 'written.qvd')) > 0
+    assert os.path.exists(str(tmp_path / "written.qvd"))
+    assert os.path.getsize(str(tmp_path / "written.qvd")) > 0
 
-    written_df = QvdTable.from_qvd(str(tmp_path / 'written.qvd'))
+    written_df = QvdTable.from_qvd(str(tmp_path / "written.qvd"))
 
     assert written_df is not None
     assert written_df.shape is not None
     assert written_df.shape[0] == 5
-    assert written_df.shape[1] == 2
+    assert written_df.shape[1] == 3
 
     written_columns = written_df.to_dict()["columns"]
     written_data = written_df.to_dict()["data"]
 
-    assert written_columns == ['Key', 'Value']
-    assert written_data[0] == [1, 'A']
-    assert written_data[1] == [2, 'B']
-    assert written_data[2] == [3, 'C']
-    assert written_data[3] == [4, 'D']
-    assert written_data[4] == [5, 'E']
+    assert written_columns == ["Key", "Value", "Timestamp"]
+    assert written_data[0] == [1, "A", dt.datetime(2021, 1, 1, 0, 0, 0)]
+    assert written_data[1] == [2, "B", dt.datetime(2021, 1, 2, 0, 0, 0)]
+    assert written_data[2] == [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0)]
+    assert written_data[3] == [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0)]
+    assert written_data[4] == [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0)]
 
 def test_write_qvd_file_as_binary_file_stream(tmp_path):
     """
@@ -61,13 +62,13 @@ def test_write_qvd_file_as_binary_file_stream(tmp_path):
     written to a binary stream successfully.
     """
     raw_df = {
-        'columns': ['Key', 'Value'],
-        'data': [
-            [1, 'A'],
-            [2, 'B'],
-            [3, 'C'],
-            [4, 'D'],
-            [5, 'E']
+        "columns": ["Key", "Value", "Timestamp"],
+        "data": [
+            [1, "A", dt.datetime(2021, 1, 1, 0, 0, 0)],
+            [2, "B", dt.datetime(2021, 1, 2, 0, 0, 0)],
+            [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0)],
+            [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0)],
+            [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0)]
         ]
     }
 
@@ -76,32 +77,32 @@ def test_write_qvd_file_as_binary_file_stream(tmp_path):
     assert df is not None
     assert df.shape is not None
     assert df.shape[0] == 5
-    assert df.shape[1] == 2
+    assert df.shape[1] == 3
     assert df.columns is not None
-    assert len(df.columns) == 2
+    assert len(df.columns) == 3
     assert df.data is not None
     assert len(df.data) == 5
-    assert df.head(2).shape == (2, 2)
+    assert df.head(2).shape == (2, 3)
 
-    with open(str(tmp_path / 'written.qvd'), 'wb') as file:
+    with open(str(tmp_path / "written.qvd"), "wb") as file:
         df.to_stream(file)
 
-    assert os.path.exists(tmp_path / 'written.qvd')
-    assert os.path.getsize(tmp_path / 'written.qvd') > 0
+    assert os.path.exists(tmp_path / "written.qvd")
+    assert os.path.getsize(tmp_path / "written.qvd") > 0
 
-    written_df = QvdTable.from_qvd(str(tmp_path / 'written.qvd'))
+    written_df = QvdTable.from_qvd(str(tmp_path / "written.qvd"))
 
     assert written_df is not None
     assert written_df.shape is not None
     assert written_df.shape[0] == 5
-    assert written_df.shape[1] == 2
+    assert written_df.shape[1] == 3
 
     written_columns = written_df.to_dict()["columns"]
     written_data = written_df.to_dict()["data"]
 
-    assert written_columns == ['Key', 'Value']
-    assert written_data[0] == [1, 'A']
-    assert written_data[1] == [2, 'B']
-    assert written_data[2] == [3, 'C']
-    assert written_data[3] == [4, 'D']
-    assert written_data[4] == [5, 'E']
+    assert written_columns == ["Key", "Value", "Timestamp"]
+    assert written_data[0] == [1, "A", dt.datetime(2021, 1, 1, 0, 0, 0)]
+    assert written_data[1] == [2, "B", dt.datetime(2021, 1, 2, 0, 0, 0)]
+    assert written_data[2] == [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0)]
+    assert written_data[3] == [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0)]
+    assert written_data[4] == [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0)]

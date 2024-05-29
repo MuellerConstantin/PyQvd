@@ -9,7 +9,8 @@ import io
 from typing import Union, List, Dict, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, NumberFormat,
-                       IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue)
+                       IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue,
+                       TimeValue, DateValue, TimestampValue)
 
 class QvdFileWriter:
     """
@@ -97,7 +98,22 @@ class QvdFileWriter:
 
             symbol_types = set([type(symbol) for symbol in symbols])
 
-            if symbol_types.issubset(set([IntegerValue])):
+            if symbol_types.issubset(set([TimeValue])):
+                field_header.number_format.type = "TIME"
+                field_header.number_format.fmt = "hh:mm:ss"
+                field_header.tags.append("$numeric")
+            elif symbol_types.issubset(set([DateValue])):
+                field_header.number_format.type = "DATE"
+                field_header.number_format.fmt = "YYYY-MM-DD"
+                field_header.tags.append("$date")
+                field_header.tags.append("$numeric")
+                field_header.tags.append("$integer")
+            elif symbol_types.issubset(set([TimestampValue])):
+                field_header.number_format.type = "TIMESTAMP"
+                field_header.number_format.fmt = "YYYY-MM-DD hh:mm:ss[.fff]"
+                field_header.tags.append("$timestamp")
+                field_header.tags.append("$numeric")
+            elif symbol_types.issubset(set([IntegerValue])):
                 field_header.tags.append("$numeric")
                 field_header.tags.append("$integer")
             elif symbol_types.issubset(set([IntegerValue, DoubleValue, DualIntegerValue, DualDoubleValue])):

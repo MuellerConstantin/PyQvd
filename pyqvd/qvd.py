@@ -5,6 +5,7 @@ Module contains the core classes and functions for dealing with QVD files. The m
 
 import struct
 from copy import deepcopy
+import datetime as dt
 from functools import cmp_to_key
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
@@ -336,6 +337,149 @@ class DualDoubleValue(QvdValue):
     def byte_representation(self) -> bytes:
         return (b"\06" + struct.pack("<d", self._double_value) +
                 str.encode(self._string_value, encoding="utf-8") + b"\0")
+
+class TimeValue(DualDoubleValue):
+    """
+    Represents a time value in a QVD file.
+
+    Times are stored as dual double values where the double value represents the fraction of a day
+    and the string value represents the time in a human-readable format. This data type does not
+    exist in QVD files and is provided for convenience.
+    """
+    @property
+    def time(self) -> dt.time:
+        """
+        Returns the time value.
+
+        :return: The time value.
+        """
+        return TimeValue._serial_number_to_time(self._double_value)
+
+    @staticmethod
+    def _time_to_serial_number(time: dt.time) -> float:
+        # pylint: disable-next=invalid-name
+        seconds = (time.hour * 60 * 60) + (time.minute * 60) + time.second
+        serial_number = seconds / (24 * 60 * 60)
+
+        return serial_number
+
+    @staticmethod
+    def _serial_number_to_time(serial_number: float) -> dt.time:
+        # pylint: disable-next=invalid-name
+        seconds = int(serial_number * 24 * 60 * 60)
+        hours, seconds = divmod(seconds, 60 * 60)
+        minutes, seconds = divmod(seconds, 60)
+
+        return dt.time(hours, minutes, seconds)
+
+    @staticmethod
+    def from_time(time: dt.time) -> "TimeValue":
+        """
+        Creates a new time value from a time.
+
+        :param time: The time value.
+        :return: The time value.
+        """
+        serial_number = TimeValue._time_to_serial_number(time)
+        display_value = time.strftime("%H:%M:%S")
+
+        return TimeValue(serial_number, display_value)
+
+class DateValue(DualIntegerValue):
+    """
+    Represents a date value in a QVD file.
+
+    Dates are stored as dual integer values where the integer value represents the number of days
+    since the base date (December 30, 1899) and the string value represents the date in a human-
+    readable format. This data type does not exist in QVD files and is provided for convenience.
+    """
+    @property
+    def date(self) -> dt.date:
+        """
+        Returns the date value.
+
+        :return: The date value.
+        """
+        return DateValue._serial_number_to_date(self._int_value)
+
+    @staticmethod
+    def _date_to_serial_number(date: dt.date) -> int:
+        # pylint: disable-next=invalid-name
+        BASE_DATE = dt.date(1899, 12, 30)
+        delta = date - BASE_DATE
+        serial_number = delta.days
+
+        return serial_number
+
+    @staticmethod
+    def _serial_number_to_date(serial_number: int) -> dt.date:
+        # pylint: disable-next=invalid-name
+        BASE_DATE = dt.date(1899, 12, 30)
+        delta = dt.timedelta(days=serial_number)
+        date = BASE_DATE + delta
+
+        return date
+
+    @staticmethod
+    def from_date(date: dt.date) -> "DateValue":
+        """
+        Creates a new date value from a date.
+
+        :param date: The date value.
+        :return: The date value.
+        """
+        serial_number = DateValue._date_to_serial_number(date)
+        display_value = date.strftime("%Y-%m-%d")
+
+        return DateValue(serial_number, display_value)
+
+class TimestampValue(DualDoubleValue):
+    """
+    Represents a timestamp value in a QVD file.
+
+    Timestamps are stored as dual double values where the double value represents the fraction of a
+    day and the string value represents the timestamp in a human-readable format. This data type does
+    not exist in QVD files and is provided for convenience.
+    """
+    @property
+    def timestamp(self) -> dt.datetime:
+        """
+        Returns the timestamp value.
+
+        :return: The timestamp value.
+        """
+        return TimestampValue._serial_number_to_timestamp(self._double_value)
+
+    @staticmethod
+    def _timestamp_to_serial_number(timestamp: dt.datetime) -> float:
+        # pylint: disable-next=invalid-name
+        BASE_TIMESTAMP = dt.datetime(1899, 12, 30)
+        delta = timestamp - BASE_TIMESTAMP
+        excel_serial_date = delta.days + delta.seconds / (24 * 60 * 60)
+
+        return excel_serial_date
+
+    @staticmethod
+    def _serial_number_to_timestamp(serial_number: float) -> dt.datetime:
+        # pylint: disable-next=invalid-name
+        BASE_TIMESTAMP = dt.datetime(1899, 12, 30)
+        delta = dt.timedelta(days=serial_number)
+        timestamp = BASE_TIMESTAMP + delta
+
+        return timestamp
+
+    @staticmethod
+    def from_timestamp(timestamp: dt.datetime) -> "TimestampValue":
+        """
+        Creates a new timestamp value from a timestamp.
+
+        :param timestamp: The timestamp or time value.
+        :return: The timestamp value.
+        """
+        serial_number = TimestampValue._timestamp_to_serial_number(timestamp)
+        display_value = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+        return TimestampValue(serial_number, display_value)
 
 class QvdTable:
     """
@@ -1426,7 +1570,21 @@ class QvdTable:
             >>> tbl.to_dict()
             {'columns': ['A', 'B', 'C'], 'data': [[1, 2, 3], [4, 5, 6], [7, 8, 9]}
         """
-        return {"columns": self._columns, "data": [[value.display_value for value in row] for row in self._data]}
+        def _get_value_from_symbol(value: QvdValue) -> any:
+            if value is None:
+                return None
+
+            if isinstance(value, TimeValue):
+                return value.time
+            if isinstance(value, DateValue):
+                return value.date
+            if isinstance(value, TimestampValue):
+                return value.timestamp
+
+            return value.calculation_value
+
+        data = [[_get_value_from_symbol(symbol) for symbol in row] for row in self._data]
+        return {"columns": self._columns, "data": data}
 
     def to_pandas(self) -> "pd.DataFrame":
         """
@@ -1449,7 +1607,21 @@ class QvdTable:
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
 
-        return pd.DataFrame([[value.calculation_value for value in row] for row in self._data], columns=self._columns)
+        def _get_value_from_symbol(value: QvdValue) -> any:
+            if value is None:
+                return None
+
+            if isinstance(value, TimeValue):
+                return value.time
+            if isinstance(value, DateValue):
+                return value.date
+            if isinstance(value, TimestampValue):
+                return value.timestamp
+
+            return value.calculation_value
+
+        data = [[_get_value_from_symbol(symbol) for symbol in row] for row in self._data]
+        return pd.DataFrame(data, columns=self._columns)
 
     @staticmethod
     def from_qvd(path: str) -> "QvdTable":
@@ -1510,6 +1682,12 @@ class QvdTable:
                 return IntegerValue(value)
             if isinstance(value, float):
                 return DoubleValue(value)
+            if isinstance(value, dt.time):
+                return TimeValue.from_time(value)
+            if isinstance(value, dt.datetime):
+                return TimestampValue.from_timestamp(value)
+            if isinstance(value, dt.date):
+                return DateValue.from_date(value)
 
             return StringValue(str(value))
 
@@ -1533,6 +1711,7 @@ class QvdTable:
         try:
             # pylint: disable=import-outside-toplevel
             import pandas as pd
+            from pandas.api.types import is_integer_dtype, is_float_dtype, is_datetime64_any_dtype
         except ImportError as exc:
             raise ImportError(
                 "Pandas is not installed. Please install it using `pip install pandas`."
@@ -1542,10 +1721,25 @@ class QvdTable:
             if value is None or pd.isna(value):
                 return None
 
-            if isinstance(value, int):
+            if isinstance(value, QvdValue):
+                return value
+
+            value_type = type(value)
+
+            if is_integer_dtype(value_type):
                 return IntegerValue(value)
-            if isinstance(value, float):
+            if is_float_dtype(value_type):
                 return DoubleValue(value)
+            if isinstance(value, pd.Timestamp):
+                return TimestampValue.from_timestamp(value.to_pydatetime())
+            if isinstance(value, dt.time):
+                return TimeValue.from_time(value)
+            if isinstance(value, dt.datetime):
+                return TimestampValue.from_timestamp(value)
+            if isinstance(value, dt.date):
+                return DateValue.from_date(value)
+            if is_datetime64_any_dtype(value_type):
+                return TimestampValue.from_timestamp(pd.Timestamp(value).to_pydatetime())
 
             return StringValue(str(value))
 

@@ -56,6 +56,30 @@ DualDoubleValue
 
     .. automethod:: __init__
 
+TimeValue
+^^^^^^^^^
+
+.. autoclass:: pyqvd.TimeValue
+    :members:
+
+    .. automethod:: __init__
+
+DateValue
+^^^^^^^^^
+
+.. autoclass:: pyqvd.DateValue
+    :members:
+
+    .. automethod:: __init__
+
+TimestampValue
+^^^^^^^^^^^^^^
+
+.. autoclass:: pyqvd.TimestampValue
+    :members:
+
+    .. automethod:: __init__
+
 QvdTable
 ^^^^^^^^
 

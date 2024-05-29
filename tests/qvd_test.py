@@ -3,8 +3,9 @@ Tests the functionality related to reading files.
 """
 
 from typing import TYPE_CHECKING
+import datetime as dt
 import pytest
-from pyqvd import QvdTable, IntegerValue, StringValue
+from pyqvd import QvdTable, IntegerValue, StringValue, TimeValue, DateValue, TimestampValue
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -25,18 +26,54 @@ def test_qvd_value_comparison():
     assert x1 <= x2
     assert x1 >= x2
 
+def test_construct_qvd_time_value():
+    """
+    Tests if a QVD time value can be constructed properly.
+    """
+    raw_time = dt.time(9, 0, 0)
+    time = TimeValue.from_time(raw_time)
+
+    assert time is not None
+    assert time.calculation_value == 0.375
+    assert time.display_value == "09:00:00"
+    assert time.time == raw_time
+
+def test_construct_qvd_date_value():
+    """
+    Tests if a QVD date value can be constructed properly.
+    """
+    raw_date = dt.date(2021, 1, 1)
+    date = DateValue.from_date(raw_date)
+
+    assert date is not None
+    assert date.calculation_value == 44197
+    assert date.display_value == "2021-01-01"
+    assert date.date == raw_date
+
+def test_construct_qvd_timestamp_value():
+    """
+    Tests if a QVD timestamp value can be constructed properly.
+    """
+    raw_timestamp = dt.datetime(2021, 1, 1, 9, 0, 0)
+    timestamp = TimestampValue.from_timestamp(raw_timestamp)
+
+    assert timestamp is not None
+    assert timestamp.calculation_value == 44197.375
+    assert timestamp.display_value == "2021-01-01 09:00:00"
+    assert timestamp.timestamp == raw_timestamp
+
 def test_construct_qvd_table_from_dict():
     """
     Tests if a QVD table, constructed from a dictionary, can be read properly.
     """
     raw_tbl = {
-        "columns": ["Key", "Value"],
+        "columns": ["Key", "Value", "Timestamp"],
         "data": [
-            [1, "A"],
-            [2, "B"],
-            [3, "C"],
-            [4, "D"],
-            [5, "E"]
+            [1, "A", dt.datetime(2021, 1, 1, 9, 0, 0)],
+            [2, "B", dt.datetime(2021, 1, 2, 9, 0, 0)],
+            [3, "C", dt.datetime(2021, 1, 3, 9, 0, 0)],
+            [4, "D", dt.datetime(2021, 1, 4, 9, 0, 0)],
+            [5, "E", dt.datetime(2021, 1, 5, 9, 0, 0)]
         ]
     }
 
@@ -45,13 +82,45 @@ def test_construct_qvd_table_from_dict():
     assert tbl is not None
     assert tbl.shape is not None
     assert tbl.shape[0] == 5
-    assert tbl.shape[1] == 2
+    assert tbl.shape[1] == 3
     assert tbl.columns is not None
-    assert len(tbl.columns) == 2
+    assert len(tbl.columns) == 3
     assert tbl.data is not None
     assert len(tbl.data) == 5
-    assert tbl.head(2).shape == (2, 2)
+    assert tbl.head(2).shape == (2, 3)
     assert tbl.to_dict() == raw_tbl
+    assert isinstance(tbl.at(0, "Timestamp"), TimestampValue)
+
+def test_construct_qvd_table_from_dict_with_datetimes():
+    """
+    Tests if a QVD table, constructed from a dictionary with datetimes, can be read properly.
+    """
+    raw_tbl = {
+        "columns": ["Dates", "Timestamps", "Times"],
+        "data": [
+            [dt.date(2021, 1, 1), dt.datetime(2021, 1, 1, 9, 0, 0), dt.time(9, 0, 0)],
+            [dt.date(2021, 1, 2), dt.datetime(2021, 1, 2, 10, 0, 0), dt.time(10, 0, 0)],
+            [dt.date(2021, 1, 3), dt.datetime(2021, 1, 3, 11, 0, 0), dt.time(11, 0, 0)],
+            [dt.date(2021, 1, 4), dt.datetime(2021, 1, 4, 12, 0, 0), dt.time(12, 0, 0)],
+            [dt.date(2021, 1, 5), dt.datetime(2021, 1, 5, 13, 0, 0), dt.time(13, 0, 0)]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+
+    assert tbl is not None
+    assert tbl.shape is not None
+    assert tbl.shape[0] == 5
+    assert tbl.shape[1] == 3
+    assert tbl.columns is not None
+    assert len(tbl.columns) == 3
+    assert tbl.data is not None
+    assert len(tbl.data) == 5
+    assert tbl.head(2).shape == (2, 3)
+    assert tbl.to_dict() == raw_tbl
+    assert isinstance(tbl.at(0, "Dates"), DateValue)
+    assert isinstance(tbl.at(0, "Timestamps"), TimestampValue)
+    assert isinstance(tbl.at(0, "Times"), TimeValue)
 
 def test_construct_qvd_table_from_pandas_df():
     """
@@ -67,7 +136,12 @@ def test_construct_qvd_table_from_pandas_df():
 
     raw_df = pd.DataFrame({
         "Key": [1, 2, 3, 4, 5],
-        "Value": ["A", "B", "C", "D", "E"]
+        "Value": ["A", "B", "C", "D", "E"],
+        "Timestamp": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                      dt.datetime(2021, 1, 2, 9, 0, 0),
+                      dt.datetime(2021, 1, 3, 9, 0, 0),
+                      dt.datetime(2021, 1, 4, 9, 0, 0),
+                      dt.datetime(2021, 1, 5, 9, 0, 0)]
     })
 
     tbl = QvdTable.from_pandas(raw_df)
@@ -75,13 +149,60 @@ def test_construct_qvd_table_from_pandas_df():
     assert tbl is not None
     assert tbl.shape is not None
     assert tbl.shape[0] == 5
-    assert tbl.shape[1] == 2
+    assert tbl.shape[1] == 3
     assert tbl.columns is not None
-    assert len(tbl.columns) == 2
+    assert len(tbl.columns) == 3
     assert tbl.data is not None
     assert len(tbl.data) == 5
-    assert tbl.head(2).shape == (2, 2)
+    assert tbl.head(2).shape == (2, 3)
     assert tbl.to_pandas().equals(raw_df)
+    assert isinstance(tbl.at(0, "Timestamp"), TimestampValue)
+
+def test_construct_qvd_table_from_pandas_df_with_datetimes():
+    """
+    Tests if a QVD table, constructed from a pandas DataFrame with datetimes, can be read properly.
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    raw_df = pd.DataFrame({
+        "Dates": [dt.date(2021, 1, 1),
+                  dt.date(2021, 1, 2),
+                  dt.date(2021, 1, 3),
+                  dt.date(2021, 1, 4),
+                  dt.date(2021, 1, 5)],
+        "Timestamps": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                       dt.datetime(2021, 1, 2, 10, 0, 0),
+                       dt.datetime(2021, 1, 3, 11, 0, 0),
+                       dt.datetime(2021, 1, 4, 12, 0, 0),
+                       dt.datetime(2021, 1, 5, 13, 0, 0)],
+        "Times": [dt.time(9, 0, 0),
+                    dt.time(10, 0, 0),
+                    dt.time(11, 0, 0),
+                    dt.time(12, 0, 0),
+                    dt.time(13, 0, 0)]
+    })
+
+    tbl = QvdTable.from_pandas(raw_df)
+
+    assert tbl is not None
+    assert tbl.shape is not None
+    assert tbl.shape[0] == 5
+    assert tbl.shape[1] == 3
+    assert tbl.columns is not None
+    assert len(tbl.columns) == 3
+    assert tbl.data is not None
+    assert len(tbl.data) == 5
+    assert tbl.head(2).shape == (2, 3)
+    assert tbl.to_pandas().equals(raw_df)
+    assert isinstance(tbl.at(0, "Dates"), DateValue)
+    assert isinstance(tbl.at(0, "Timestamps"), TimestampValue)
+    assert isinstance(tbl.at(0, "Times"), TimeValue)
 
 def test_qvd_table_to_dict():
     """
@@ -95,6 +216,25 @@ def test_qvd_table_to_dict():
             [3, "C"],
             [4, "D"],
             [5, "E"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+
+    assert tbl.to_dict() == raw_tbl
+
+def test_qvd_table_to_dict_with_datetimes():
+    """
+    Tests if a QVD table with datetimes can be converted to a dictionary properly.
+    """
+    raw_tbl = {
+        "columns": ["Dates", "Timestamps"],
+        "data": [
+            [dt.date(2021, 1, 1), dt.datetime(2021, 1, 1, 9, 0, 0)],
+            [dt.date(2021, 1, 2), dt.datetime(2021, 1, 2, 10, 0, 0)],
+            [dt.date(2021, 1, 3), dt.datetime(2021, 1, 3, 11, 0, 0)],
+            [dt.date(2021, 1, 4), dt.datetime(2021, 1, 4, 12, 0, 0)],
+            [dt.date(2021, 1, 5), dt.datetime(2021, 1, 5, 13, 0, 0)]
         ]
     }
 
@@ -117,6 +257,35 @@ def test_qvd_table_to_pandas():
     raw_df = pd.DataFrame({
         "Key": [1, 2, 3, 4, 5],
         "Value": ["A", "B", "C", "D", "E"]
+    })
+
+    tbl = QvdTable.from_pandas(raw_df)
+
+    assert tbl.to_pandas().equals(raw_df)
+
+def test_qvd_table_to_pandas_with_datetimes():
+    """
+    Tests if a QVD table with datetimes can be converted to a pandas DataFrame properly.
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    raw_df = pd.DataFrame({
+        "Dates": [dt.date(2021, 1, 1),
+                  dt.date(2021, 1, 2),
+                  dt.date(2021, 1, 3),
+                  dt.date(2021, 1, 4),
+                  dt.date(2021, 1, 5)],
+        "Timestamps": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                       dt.datetime(2021, 1, 2, 10, 0, 0),
+                       dt.datetime(2021, 1, 3, 11, 0, 0),
+                       dt.datetime(2021, 1, 4, 12, 0, 0),
+                       dt.datetime(2021, 1, 5, 13, 0, 0)]
     })
 
     tbl = QvdTable.from_pandas(raw_df)

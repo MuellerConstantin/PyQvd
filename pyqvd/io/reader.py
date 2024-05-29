@@ -8,7 +8,7 @@ from typing import Union, List, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
                        DualIntegerValue, DualDoubleValue, QvdTableHeader, QvdFieldHeader,
-                       NumberFormat, LineageInfo)
+                       NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue)
 
 class QvdFileReader:
     """
@@ -163,7 +163,11 @@ class QvdFileReader:
 
                     string_value = string_byte_data.decode(encoding="utf-8")
                     pointer += 1
-                    symbols.append(DualIntegerValue(int_value, string_value))
+
+                    if field.number_format.type == "DATE":
+                        symbols.append(DateValue(int_value, string_value))
+                    else:
+                        symbols.append(DualIntegerValue(int_value, string_value))
                 elif symbol_type == 6:
                     double_byte_data = symbol_buffer[pointer:pointer + 8]
                     double_value = struct.unpack("<d", double_byte_data)[0]
@@ -171,12 +175,18 @@ class QvdFileReader:
 
                     string_byte_data = bytearray()
                     while symbol_buffer[pointer] != 0:
-                        string_value += chr(symbol_buffer[pointer])
+                        string_byte_data.append(symbol_buffer[pointer])
                         pointer += 1
 
                     string_value = string_byte_data.decode(encoding="utf-8")
                     pointer += 1
-                    symbols.append(DualDoubleValue(double_value, string_value))
+
+                    if field.number_format.type == "TIMESTAMP":
+                        symbols.append(TimestampValue(double_value, string_value))
+                    elif field.number_format.type == "TIME":
+                        symbols.append(TimeValue(double_value, string_value))
+                    else:
+                        symbols.append(DualDoubleValue(double_value, string_value))
                 else:
                     raise ValueError("The symbol type byte is not recognized. Unknown data type: " + hex(symbol_type))
 
