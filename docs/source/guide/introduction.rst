@@ -47,8 +47,8 @@ following code:
     obj = s3.get_object(Bucket="my-bucket", Key="sample.qvd")
     tbl = QvdTable.from_stream(obj["Body"])
 
-Features
---------
+Data Manipulation
+-----------------
 
 After reading/constructing a QVD table, you can perform various operations on the data. The
 :class:`pyqvd.qvd.QvdTable` class provides a number of methods to help you analyze and

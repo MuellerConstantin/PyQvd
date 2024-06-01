@@ -48,6 +48,38 @@ when loading the data into QlikView/Qlik Sense.
 | Dual Double  | 0x06 | signed 8-byte IEEE floating point number (little endian) followed by a null terminated string |
 +--------------+------+-----------------------------------------------------------------------------------------------+
 
+In addition to the actual data types above, meta information about the stored values  in a column is stored
+in the XML header. This meta information is used to interpret the data correctly when loading the data into
+QlikView/Qlik Sense. Therefor, the field tags and the field's number format are used to interpret the data
+correctly. For example, a time and a timestamp value are both stored as a dual double value in the QVD
+file, but the field's number format attribute in the XML header is used to differentiate between the two
+data types and to interpret the data correctly. For a time value, the field type attribute in the number
+format tag is set to `TIME`, and for a timestamp value, the field type attribute is set to `TIMESTAMP`. The
+following table shows the possible number format types and their corresponding values.
+
++-----------+----------------------------------------------------------------------+
+| Type      | Description                                                          |
++===========+======================================================================+
+| UNKNOWN   | Used if the column's values can not be interpreted as a known and    |
+|           | uniform data type.                                                   |
++-----------+----------------------------------------------------------------------+
+| DATE      | The column's values are interpreted as a date.                       |
++-----------+----------------------------------------------------------------------+
+| TIME      | The column's values are interpreted as a time.                       |
++-----------+----------------------------------------------------------------------+
+| TIMESTAMP | The column's values are interpreted as a timestamp.                  |
++-----------+----------------------------------------------------------------------+
+| INTERVAL  | The column's values are interpreted as an interval.                  |
++-----------+----------------------------------------------------------------------+
+| INTEGER   | The column's values are interpreted as an integer.                   |
++-----------+----------------------------------------------------------------------+
+| MONEY     | The column's values are interpreted as a currency.                   |
++-----------+----------------------------------------------------------------------+
+| REAL      | The column's values are interpreted as a real number.                |
++-----------+----------------------------------------------------------------------+
+| ASCII     | The column's values are interpreted as text.                         |
++-----------+----------------------------------------------------------------------+
+
 Basically, the symbol table is a memory block that contains the distinct values of each field. The order
 of the fields in the symbol table is the same as in the XML header. Each single value is prefixed with
 a type byte that indicates the data type of the value itself.

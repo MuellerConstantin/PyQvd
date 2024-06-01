@@ -80,6 +80,14 @@ TimestampValue
 
     .. automethod:: __init__
 
+IntervalValue
+^^^^^^^^^^^^^
+
+.. autoclass:: pyqvd.IntervalValue
+    :members:
+
+    .. automethod:: __init__
+
 QvdTable
 ^^^^^^^^
 
