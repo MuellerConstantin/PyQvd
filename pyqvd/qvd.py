@@ -309,7 +309,8 @@ class TimeValue(DualDoubleValue):
 
     Times are stored as dual double values where the double value represents the fraction of a day
     and the string value represents the time in a human-readable format. This data type does not
-    exist in QVD files and is provided for convenience.
+    exist in QVD files and is provided for convenience. In QVD files, times are stored as dual
+    double values with a number format of "TIME" if the column is a uniform time column.
     """
     @property
     def time(self) -> dt.time:
@@ -370,6 +371,8 @@ class DateValue(DualIntegerValue):
     Dates are stored as dual integer values where the integer value represents the number of days
     since the base date (December 30, 1899) and the string value represents the date in a human-
     readable format. This data type does not exist in QVD files and is provided for convenience.
+    In QVD files, dates are stored as dual integer values with a number format of "DATE" if the
+    column is a uniform date column.
     """
     @property
     def date(self) -> dt.date:
@@ -430,7 +433,8 @@ class TimestampValue(DualDoubleValue):
 
     Timestamps are stored as dual double values where the double value represents the fraction of a
     day and the string value represents the timestamp in a human-readable format. This data type does
-    not exist in QVD files and is provided for convenience.
+    not exist in QVD files and is provided for convenience. In QVD files, timestamps are stored as
+    dual double values with a number format of "DATETIME" if the column is a uniform timestamp column.
     """
     @property
     def timestamp(self) -> dt.datetime:
@@ -484,6 +488,71 @@ class TimestampValue(DualDoubleValue):
         display_value = timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         return TimestampValue(serial_number, display_value)
+
+class IntervalValue(DualDoubleValue):
+    """
+    Represents an interval value in a QVD file.
+
+    Intervals are stored as dual double values where the double value represents the fraction of a
+    day and the string value represents the interval in a human-readable format. This data type does
+    not exist in QVD files and is provided for convenience. In QVD files, intervals are stored as
+    dual double values with a number format of "INTERVAL" if the column is a uniform interval column.
+    """
+    @property
+    def interval(self) -> dt.timedelta:
+        """
+        Returns the interval value.
+
+        :return: The interval value.
+        """
+        return IntervalValue._serial_number_to_interval(self._double_value)
+
+    @staticmethod
+    def _interval_to_serial_number(interval: dt.timedelta) -> float:
+        return interval.days + interval.seconds / (24 * 60 * 60)
+
+    @staticmethod
+    def _serial_number_to_interval(serial_number: float) -> dt.timedelta:
+        days = int(serial_number)
+        seconds = int((serial_number - days) * 24 * 60 * 60)
+
+        return dt.timedelta(days=days, seconds=seconds)
+
+    @staticmethod
+    def from_interval(interval: dt.timedelta) -> "IntervalValue":
+        """
+        Creates a new interval value from an interval.
+
+        :param interval: The interval value.
+        :return: The interval value.
+        """
+        serial_number = IntervalValue._interval_to_serial_number(interval)
+
+        days = interval.days
+        hours, seconds = divmod(interval.seconds, 60 * 60)
+        minutes, seconds = divmod(seconds, 60)
+
+        display_value = f"{days} {hours:02}:{minutes:02}:{seconds:02}"
+
+        return IntervalValue(serial_number, display_value)
+
+    @staticmethod
+    def from_serial_number(serial_number: float) -> "IntervalValue":
+        """
+        Creates a new interval value from a serial number.
+
+        :param serial_number: The serial number representing the interval.
+        :return: The interval value.
+        """
+        interval = IntervalValue._serial_number_to_interval(serial_number)
+
+        days = interval.days
+        hours, seconds = divmod(interval.seconds, 60 * 60)
+        minutes, seconds = divmod(seconds, 60)
+
+        display_value = f"{days} {hours:02}:{minutes:02}:{seconds:02}"
+
+        return IntervalValue(serial_number, display_value)
 
 class QvdTable:
     """
@@ -1584,6 +1653,8 @@ class QvdTable:
                 return value.date
             if isinstance(value, TimestampValue):
                 return value.timestamp
+            if isinstance(value, IntervalValue):
+                return value.interval
 
             return value.calculation_value
 
@@ -1621,6 +1692,8 @@ class QvdTable:
                 return value.date
             if isinstance(value, TimestampValue):
                 return value.timestamp
+            if isinstance(value, IntervalValue):
+                return value.interval
 
             return value.calculation_value
 
@@ -1692,6 +1765,8 @@ class QvdTable:
                 return TimestampValue.from_timestamp(value)
             if isinstance(value, dt.date):
                 return DateValue.from_date(value)
+            if isinstance(value, dt.timedelta):
+                return IntervalValue.from_interval(value)
 
             return StringValue(str(value))
 
@@ -1742,6 +1817,8 @@ class QvdTable:
                 return TimestampValue.from_timestamp(value)
             if isinstance(value, dt.date):
                 return DateValue.from_date(value)
+            if isinstance(value, dt.timedelta):
+                return IntervalValue.from_interval(value)
             if is_datetime64_any_dtype(value_type):
                 return TimestampValue.from_timestamp(pd.Timestamp(value).to_pydatetime())
 

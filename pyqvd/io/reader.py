@@ -8,7 +8,8 @@ from typing import Union, List, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
                        DualIntegerValue, DualDoubleValue, QvdTableHeader, QvdFieldHeader,
-                       NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue)
+                       NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue,
+                       IntervalValue)
 
 class QvdFileReader:
     """
@@ -185,6 +186,8 @@ class QvdFileReader:
                         symbols.append(TimestampValue(double_value, string_value))
                     elif field.number_format.type == "TIME":
                         symbols.append(TimeValue(double_value, string_value))
+                    elif field.number_format.type == "INTERVAL":
+                        symbols.append(IntervalValue(double_value, string_value))
                     else:
                         symbols.append(DualDoubleValue(double_value, string_value))
                 else:

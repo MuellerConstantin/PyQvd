@@ -5,7 +5,7 @@ Tests the functionality related to reading files.
 from typing import TYPE_CHECKING
 import datetime as dt
 import pytest
-from pyqvd import QvdTable, IntegerValue, StringValue, TimeValue, DateValue, TimestampValue
+from pyqvd import (QvdTable, IntegerValue, StringValue, TimeValue, DateValue, TimestampValue, IntervalValue)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -61,6 +61,18 @@ def test_construct_qvd_timestamp_value():
     assert timestamp.calculation_value == 44197.375
     assert timestamp.display_value == "2021-01-01 09:00:00"
     assert timestamp.timestamp == raw_timestamp
+
+def test_construct_qvd_interval_value():
+    """
+    Tests if a QVD interval value can be constructed properly.
+    """
+    raw_interval = dt.timedelta(days=1, hours=2, minutes=30)
+    interval = IntervalValue.from_interval(raw_interval)
+
+    assert interval is not None
+    assert interval.calculation_value == 1.1041666666666667
+    assert interval.display_value == "1 02:30:00"
+    assert interval.interval == raw_interval
 
 def test_construct_qvd_table_from_dict():
     """
