@@ -20,6 +20,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8"
 ]
@@ -29,6 +30,7 @@ Homepage = "https://github.com/MuellerConstantin/PyQvd"
 Repository = "https://github.com/MuellerConstantin/PyQvd.git"
 Issues = "https://github.com/MuellerConstantin/PyQvd/issues"
 Documentation = "https://pyqvd.readthedocs.io"
+Changelog = "https://github.com/MuellerConstantin/PyQvd/CHANGELOG.md"
 
 [project.optional-dependencies]
 pandas = ["pandas"]
