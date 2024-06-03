@@ -82,10 +82,17 @@ For editing the data, you can use the :func:`pyqvd.qvd.QvdTable.set` method. Thi
 you to modify individual cells, rows, or columns in the QVD table. The :func:`pyqvd.qvd.QvdTable.set`
 has also a shorthand notation available like the :func:`pyqvd.qvd.QvdTable.get` method.
 
+.. note:: You can use symbols (``QvdValue`` objects) as well as native Python values to update the data.
+    Native values will be converted to ``QvdValue`` objects automatically. Unsupported native types
+    are automatically converted to strings (``StringValue``).
+
 .. code-block:: python
 
     # Update the value at row 0 and column 'A'
     tbl.set((0, "A"), 42)
+
+    # Update the value at row 0 and column 'A' using a symbol
+    tbl.set((0, "A"), IntegerValue(42))
 
     # Update the value at row 0 and column 'A' using the shorthand notation
     tbl[0, "A"] = 42
@@ -105,10 +112,17 @@ or columns if needed. For example, to add a new row to the QVD table, you can us
 :func:`pyqvd.qvd.QvdTable.drop` method can be used to remove rows or columns from the
 QVD table again.
 
+.. note:: You can use symbols (``QvdValue`` objects) as well as native Python values to add new data.
+    Native values will be converted to ``QvdValue`` objects automatically. Unsupported native types
+    are automatically converted to strings (``StringValue``).
+
 .. code-block:: python
 
     # Add a new row to the QVD table
     tbl.append([1, 2, 3, 4, 5])
+
+    # Add a new row to the QVD table using symbols
+    tbl.append([IntegerValue(1), IntegerValue(2), IntegerValue(3), IntegerValue(4), IntegerValue(5)])
 
     # Insert a new row at index 0
     tbl.insert(0, [1, 2, 3, 4, 5])
@@ -168,6 +182,9 @@ Instead of reading the data from a QVD file, you can also import data from other
 such as a dictionary or a pandas DataFrame. This can be done by using the respective methods like
 :func:`pyqvd.qvd.QvdTable.from_dict` or :func:`pyqvd.qvd.QvdTable.from_pandas`. For more information,
 please refer to the :ref:`api` documentation.
+
+.. note:: Native Python types are automatically converted to symbols (``QvdValue`` objects) and
+    vice versa. Unsupported native types are automatically converted to strings (``StringValue``).
 
 For example, to import a pandas DataFrame into a QVD table, you can use the following code:
 

@@ -1219,10 +1219,14 @@ class QvdTable:
             return QvdTable(self._data, self._columns)
 
     # pylint: disable-next=line-too-long
-    def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[QvdValue, List[QvdValue], List[List[QvdValue]]]) -> None:
+    def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[any, List[any], List[List[any]]]) -> None:
         """
         Sets the value for the specified key. As a shorthand, you can also use the indexing
         operator to set values.
+        
+        It is possible to set single values, add columns, and overwrite rows or columns
+        with a list of values. Values can also be native Python types, which are automatically
+        converted to QvdValue objects.
 
         :param key: The key to set.
         :param value: The value to set.
@@ -1311,9 +1315,6 @@ class QvdTable:
         """
         # Set by row and column index
         if isinstance(key, tuple):
-            if not isinstance(value, QvdValue):
-                raise ValueError("Value must be a QVD value.")
-
             if not isinstance(key[0], int):
                 raise TypeError("Row must be a valid row index.")
 
@@ -1326,13 +1327,15 @@ class QvdTable:
             if key[1] not in self._columns:
                 raise KeyError(f"Column '{key[1]}' not found")
 
+            value = value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value)
+
             self._data[key[0]][self._columns.index(key[1])] = value
             return
 
         # Set by column name
         if isinstance(key, str):
-            if not isinstance(value, list) or not all(isinstance(item, QvdValue) for item in value):
-                raise ValueError("Value must be a list of QVD values.")
+            if not isinstance(value, list):
+                raise ValueError("Value must be a list of values.")
 
             if len(value) != len(self._data):
                 raise ValueError("Value must have the same number of elements as the table.")
@@ -1340,8 +1343,13 @@ class QvdTable:
             # Add a new column if it does not exist
             if key not in self._columns:
                 self._columns.append(key)
-                self._data = [row + [value[index]] for index, row in enumerate(self._data)]
+                self._data = [row + [value[index] if isinstance(value[index], QvdValue) else
+                                     QvdTable._get_symbol_from_value(value[index])]
+                                     for index, row in enumerate(self._data)]
                 return
+
+            value = [value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value)
+                     for value in value]
 
             column_index = self._columns.index(key)
             for row_index, row in enumerate(self._data):
@@ -1354,50 +1362,22 @@ class QvdTable:
             if key < 0 or key >= len(self._data):
                 raise IndexError("Row index out of range")
 
-            if not isinstance(value, list) or not all(isinstance(item, QvdValue) for item in value):
-                raise ValueError("Value must be a list of QVD values.")
+            if not isinstance(value, list):
+                raise ValueError("Value must be a list of values.")
 
             if len(value) != len(self._columns):
                 raise ValueError("Value must have the same number of elements as the table has columns.")
+
+            value = [value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value)
+                     for value in value]
 
             self._data[key] = value
             return
 
         # Set by slice
         if isinstance(key, slice):
-            is_valid_scalar = isinstance(value, QvdValue)
-
-            is_valid_vector = (isinstance(value, list) and
-                               all(isinstance(item, QvdValue) for item in value))
-
-            is_valid_matrix = (isinstance(value, list) and
-                               all(isinstance(sublist, list) and
-                                   all(isinstance(item, QvdValue) for item in sublist) for sublist in value))
-
-            if not is_valid_scalar and not is_valid_vector and not is_valid_matrix:
-                raise ValueError("Value must be a valid scalar, vector, or matrix of QVD values.")
-
-            # Replace all values in the slice with the same value
-            if is_valid_scalar:
-                for row in self._data[key]:
-                    for index, _ in enumerate(row):
-                        row[index] = value
-
-                return
-
-            # Replace all selected rows with the given vector
-            if is_valid_vector:
-                if len(value) != len(self._data[key]):
-                    raise ValueError("Value must have the same number of elements as the table has columns.")
-
-                for row in self._data[key]:
-                    for index, _ in enumerate(row):
-                        row[index] = value[index]
-
-                return
-
             # Replace all selected rows and columns with the given matrix
-            if is_valid_matrix:
+            if isinstance(value, list) and all(isinstance(sublist, list) for sublist in value):
                 if len(value) != len(self._data[key]):
                     raise ValueError("Value must have the same number of elements as the slice has rows.")
 
@@ -1406,9 +1386,26 @@ class QvdTable:
                         raise ValueError("Value must have the same number of elements as the table has columns.")
 
                     for index, _ in enumerate(row):
-                        row[index] = value[row_index][index]
+                        row[index] = (value[row_index][index] if isinstance(value[row_index][index], QvdValue) else
+                                      QvdTable._get_symbol_from_value(value[row_index][index]))
 
                 return
+
+            # Replace all selected rows with the given vector
+            if isinstance(value, list):
+                if len(value) != len(self._data[key]):
+                    raise ValueError("Value must have the same number of elements as the table has columns.")
+
+                for row in self._data[key]:
+                    for index, _ in enumerate(row):
+                        row[index] = (value[index] if isinstance(value[index], QvdValue) else
+                                      QvdTable._get_symbol_from_value(value[index]))
+
+                return
+
+            for row in self._data[key]:
+                for index, _ in enumerate(row):
+                    row[index] = (value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value))
 
         raise TypeError("Key must be a supported/valid one.")
 
@@ -1504,7 +1501,7 @@ class QvdTable:
 
         raise TypeError("Key must be a supported/valid one.")
 
-    def append(self, row: List[QvdValue]) -> None:
+    def append(self, row: List[any]) -> None:
         """
         Appends a new row to the data table.
 
@@ -1512,6 +1509,8 @@ class QvdTable:
         """
         if len(row) != len(self._columns):
             raise ValueError("Row must have the same number of elements as the table has columns.")
+
+        row = [value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value) for value in row]
 
         self._data.append(row)
 
@@ -1527,6 +1526,8 @@ class QvdTable:
 
         if index < 0 or index > len(self._data):
             raise IndexError("Index out of range")
+        
+        row = [value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value) for value in row]
 
         self._data.insert(index, row)
 

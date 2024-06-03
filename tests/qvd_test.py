@@ -726,6 +726,30 @@ def test_qvd_table_set_by_column():
     assert tbl.at(3, "Key").calculation_value == 9
     assert tbl.at(4, "Key").calculation_value == 10
 
+def test_qvd_table_add_column_with_native_types():
+    """
+    Tests the functionality of adding a column to a QVD table with native types.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.set("New", [4, 5, 6])
+
+    assert tbl.shape == (3, 3)
+    assert isinstance(tbl.at(0, "New"), IntegerValue)
+    assert isinstance(tbl.at(1, "New"), IntegerValue)
+    assert isinstance(tbl.at(2, "New"), IntegerValue)
+    assert tbl.at(0, "New").calculation_value == 4
+    assert tbl.at(1, "New").calculation_value == 5
+    assert tbl.at(2, "New").calculation_value == 6
+
 def test_qvd_table_add_column():
     """
     Tests the functionality of adding a column to a QVD table.
@@ -787,6 +811,27 @@ def test_qvd_table_set_by_row():
 
     assert tbl.at(0, "Key").calculation_value == 6
     assert tbl.at(0, "Value").calculation_value == "F"
+
+def test_qvd_table_set_by_row_with_native_types():
+    """
+    Tests the functionality of setting a row in a QVD table with native types.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.set(0, [4, "D"])
+
+    assert isinstance(tbl.at(0, "Key"), IntegerValue)
+    assert isinstance(tbl.at(0, "Value"), StringValue)
+    assert tbl.at(0, "Key").calculation_value == 4
+    assert tbl.at(0, "Value").calculation_value == "D"
 
 def test_qvd_table_set_by_invalid_row():
     """
@@ -859,6 +904,31 @@ def test_qvd_table_set_by_slice():
     assert tbl.at(3, "Key").calculation_value == 8
     assert tbl.at(3, "Value").calculation_value == "H"
 
+def test_qvd_table_set_by_slice_with_native_types():
+    """
+    Tests the functionality of setting a slice in a QVD table with native types.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.set(slice(1, 3), [[4, "D"], [5, "E"]])
+
+    assert isinstance(tbl.at(1, "Key"), IntegerValue)
+    assert isinstance(tbl.at(1, "Value"), StringValue)
+    assert isinstance(tbl.at(2, "Key"), IntegerValue)
+    assert isinstance(tbl.at(2, "Value"), StringValue)
+    assert tbl.at(1, "Key").calculation_value == 4
+    assert tbl.at(1, "Value").calculation_value == "D"
+    assert tbl.at(2, "Key").calculation_value == 5
+    assert tbl.at(2, "Value").calculation_value == "E"
+
 def test_qvd_table_set_by_slice_with_invalid_shape():
     """
     Tests the functionality of setting a slice in a QVD table with invalid data raises an exception.
@@ -929,6 +999,30 @@ def test_qvd_table_setitem_add_column():
     assert tbl.at(1, "New").calculation_value == 5
     assert tbl.at(2, "New").calculation_value == 6
 
+def test_qvd_table_setitem_add_column_with_native_types():
+    """
+    Tests the functionality of adding a column to a QVD table with native types using the setitem method.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl["New"] = [4, 5, 6]
+
+    assert tbl.shape == (3, 3)
+    assert isinstance(tbl.at(0, "New"), IntegerValue)
+    assert isinstance(tbl.at(1, "New"), IntegerValue)
+    assert isinstance(tbl.at(2, "New"), IntegerValue)
+    assert tbl.at(0, "New").calculation_value == 4
+    assert tbl.at(1, "New").calculation_value == 5
+    assert tbl.at(2, "New").calculation_value == 6
+
 def test_qvd_table_setitem_by_row():
     """
     Tests the functionality of setting a row in a QVD table using the setitem method.
@@ -949,6 +1043,27 @@ def test_qvd_table_setitem_by_row():
 
     assert tbl.at(0, "Key").calculation_value == 6
     assert tbl.at(0, "Value").calculation_value == "F"
+
+def test_qvd_table_setitem_by_row_with_native_types():
+    """
+    Tests the functionality of setting a row in a QVD table with native types using the setitem method.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"],
+            [2, "B"],
+            [3, "C"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl[0] = [4, "D"]
+
+    assert isinstance(tbl.at(0, "Key"), IntegerValue)
+    assert isinstance(tbl.at(0, "Value"), StringValue)
+    assert tbl.at(0, "Key").calculation_value == 4
+    assert tbl.at(0, "Value").calculation_value == "D"
 
 def test_qvd_table_setitem_by_slice():
     """
@@ -1017,6 +1132,26 @@ def test_qvd_table_append_row():
     assert tbl.at(1, "Key").calculation_value == 2
     assert tbl.at(1, "Value").calculation_value == "B"
 
+def test_qvd_table_append_row_with_native_types():
+    """
+    Tests the functionality of appending a row to a QVD table with native types.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [1, "A"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.append([2, "B"])
+
+    assert tbl.shape == (2, 2)
+    assert tbl.at(1, "Key").calculation_value == 2
+    assert tbl.at(1, "Value").calculation_value == "B"
+    assert isinstance(tbl.at(1, "Key"), IntegerValue)
+    assert isinstance(tbl.at(1, "Value"), StringValue)
+
 def test_qvd_table_append_row_with_invalid_shape():
     """
     Tests the functionality of appending a row to a QVD table with invalid data raises an exception.
@@ -1053,6 +1188,29 @@ def test_qvd_table_insert_row():
     assert tbl.shape == (5, 2)
     assert tbl.at(0, "Key").calculation_value == 1
     assert tbl.at(0, "Value").calculation_value == "A"
+
+def test_qvd_table_insert_row_with_native_types():
+    """
+    Tests the functionality of inserting a row to a QVD table with native types.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value"],
+        "data": [
+            [2, "B"],
+            [3, "C"],
+            [4, "D"],
+            [5, "E"]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+    tbl.insert(0, [1, "A"])
+
+    assert tbl.shape == (5, 2)
+    assert tbl.at(0, "Key").calculation_value == 1
+    assert tbl.at(0, "Value").calculation_value == "A"
+    assert isinstance(tbl.at(0, "Key"), IntegerValue)
+    assert isinstance(tbl.at(0, "Value"), StringValue)
 
 def test_qvd_table_insert_row_with_invalid_shape():
     """
