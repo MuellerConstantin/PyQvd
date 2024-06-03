@@ -5,26 +5,86 @@ Tests the functionality related to reading files.
 from typing import TYPE_CHECKING
 import datetime as dt
 import pytest
-from pyqvd import (QvdTable, IntegerValue, StringValue, TimeValue, DateValue, TimestampValue, IntervalValue)
+from pyqvd import (QvdTable, IntegerValue, DoubleValue, StringValue, TimeValue, DateValue, TimestampValue,
+                   IntervalValue, DualIntegerValue, DualDoubleValue)
 
 if TYPE_CHECKING:
     import pandas as pd
 
-def test_qvd_value_comparison():
+def test_construct_qvd_integer_value():
     """
-    Tests the comparison of two QVD values.
+    Tests if a QVD integer value can be constructed properly.
     """
-    x1 = IntegerValue(1)
-    x2 = IntegerValue(1)
-    x3 = IntegerValue(2)
+    raw_int = 1
+    integer = IntegerValue(raw_int)
 
-    assert x1 < x3
-    assert x1 <= x3
-    assert x3 > x1
-    assert x3 >= x1
-    assert x1 == x2
-    assert x1 <= x2
-    assert x1 >= x2
+    assert integer is not None
+    assert integer.calculation_value == 1
+    assert integer.display_value == "1"
+    assert integer == IntegerValue(1)
+    assert integer == 1
+    assert integer > 0
+    assert integer < 2
+
+def test_construct_qvd_double_value():
+    """
+    Tests if a QVD double value can be constructed properly.
+    """
+    raw_double = 1.0
+    double = DoubleValue(raw_double)
+
+    assert double is not None
+    assert double.calculation_value == 1.0
+    assert double.display_value == "1.0"
+    assert double == IntegerValue(1)
+    assert double == 1.0
+    assert double > 0.0
+    assert double < 2.0
+
+def test_construct_qvd_string_value():
+    """
+    Tests if a QVD string value can be constructed properly.
+    """
+    raw_str = "B"
+    string = StringValue(raw_str)
+
+    assert string is not None
+    assert string.calculation_value == "B"
+    assert string.display_value == "B"
+    assert string == StringValue("B")
+    assert string == "B"
+    assert string > "A"
+    assert string < "C"
+
+def test_construct_qvd_dual_integer_value():
+    """
+    Tests if a QVD dual integer value can be constructed properly.
+    """
+    raw_int = 1
+    dual_int = DualIntegerValue(raw_int, "1")
+
+    assert dual_int is not None
+    assert dual_int.calculation_value == 1
+    assert dual_int.display_value == "1"
+    assert dual_int == DualIntegerValue(1, "1")
+    assert dual_int == 1
+    assert dual_int > 0
+    assert dual_int < 2
+
+def test_construct_qvd_dual_double_value():
+    """
+    Tests if a QVD dual double value can be constructed properly.
+    """
+    raw_double = 1.0
+    dual_double = DualDoubleValue(raw_double, "1.0")
+
+    assert dual_double is not None
+    assert dual_double.calculation_value == 1.0
+    assert dual_double.display_value == "1.0"
+    assert dual_double == DualDoubleValue(1, "1.0")
+    assert dual_double == 1.0
+    assert dual_double > 0.0
+    assert dual_double < 2.0
 
 def test_construct_qvd_time_value():
     """
@@ -36,7 +96,12 @@ def test_construct_qvd_time_value():
     assert time is not None
     assert time.calculation_value == 0.375
     assert time.display_value == "09:00:00"
+    assert time == TimeValue.from_time(dt.time(9, 0, 0))
     assert time.time == raw_time
+    assert time == 0.375
+    assert time == dt.time(9, 0, 0)
+    assert time > 0.0
+    assert time < 1.0
 
 def test_construct_qvd_date_value():
     """

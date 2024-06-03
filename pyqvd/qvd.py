@@ -96,6 +96,7 @@ class QvdValue(metaclass=ABCMeta):
         :return: The calculation value.
         """
 
+    @abstractmethod
     def __eq__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is equal to another object.
@@ -103,10 +104,7 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if the objects are equal; otherwise, False.
         """
-        if not isinstance(__value, QvdValue):
-            return False
-
-        return self.calculation_value == __value.calculation_value
+        return NotImplemented
 
     def __ne__(self, __value: object) -> bool:
         """
@@ -117,6 +115,7 @@ class QvdValue(metaclass=ABCMeta):
         """
         return not self.__eq__(__value)
 
+    @abstractmethod
     def __lt__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is less than another object.
@@ -124,11 +123,9 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if this value is less than the other object; otherwise, False.
         """
-        if not isinstance(__value, QvdValue):
-            return NotImplemented
+        return NotImplemented
 
-        return self.calculation_value < __value.calculation_value
-
+    @abstractmethod
     def __le__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is less than or equal to another object.
@@ -136,11 +133,9 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if this value is less than or equal to the other object; otherwise, False.
         """
-        if not isinstance(__value, QvdValue):
-            return NotImplemented
+        return NotImplemented
 
-        return self.calculation_value <= __value.calculation_value
-
+    @abstractmethod
     def __gt__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is greater than another object.
@@ -148,11 +143,9 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if this value is greater than the other object; otherwise, False.
         """
-        if not isinstance(__value, QvdValue):
-            return NotImplemented
+        return NotImplemented
 
-        return self.calculation_value > __value.calculation_value
-
+    @abstractmethod
     def __ge__(self, __value: object) -> bool:
         """
         Determines whether this QVD value is greater than or equal to another object.
@@ -160,18 +153,16 @@ class QvdValue(metaclass=ABCMeta):
         :param __value: The other object.
         :return: True if this value is greater than or equal to the other object; otherwise, False.
         """
-        if not isinstance(__value, QvdValue):
-            return NotImplemented
+        return NotImplemented
 
-        return self.calculation_value >= __value.calculation_value
-
+    @abstractmethod
     def __hash__(self) -> int:
         """
         Returns the hash value of this QVD value.
 
         :return: The hash value.
         """
-        return hash(self.calculation_value)
+        raise NotImplementedError
 
     def __str__(self) -> str:
         """
@@ -209,6 +200,54 @@ class IntegerValue(QvdValue):
     def calculation_value(self) -> int:
         return self._value
 
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+
+        return self.calculation_value == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+
+        return self.calculation_value < __value
+
+    def __le__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+
+        return self.calculation_value <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+
+        return self.calculation_value > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+
+        return self.calculation_value >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
 class DoubleValue(QvdValue):
     """
     Represents a double value in a QVD file.
@@ -229,6 +268,54 @@ class DoubleValue(QvdValue):
     def calculation_value(self) -> float:
         return self._value
 
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+
+        return self.calculation_value == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+
+        return self.calculation_value < __value
+
+    def __le__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+
+        return self.calculation_value <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+
+        return self.calculation_value > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+
+        return self.calculation_value >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
 class StringValue(QvdValue):
     """
     Represents a string value in a QVD file.
@@ -248,6 +335,54 @@ class StringValue(QvdValue):
     @property
     def calculation_value(self) -> str:
         return self._value
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, str):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+
+        return self.calculation_value == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, str):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+
+        return self.calculation_value < __value
+
+    def __le__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, str):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+
+        return self.calculation_value <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, str):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+
+        return self.calculation_value > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, str):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+
+        return self.calculation_value >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
 
 class DualIntegerValue(QvdValue):
     """
@@ -276,6 +411,54 @@ class DualIntegerValue(QvdValue):
     def calculation_value(self) -> int:
         return self._int_value
 
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+
+        return self.calculation_value == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+
+        return self.calculation_value < __value
+
+    def __le__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+
+        return self.calculation_value <= __value#
+
+    def __gt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+
+        return self.calculation_value > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, int):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+
+        return self.calculation_value >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
 class DualDoubleValue(QvdValue):
     """
     Represents a dual value with a double value and a string value in a QVD file.
@@ -303,6 +486,54 @@ class DualDoubleValue(QvdValue):
     def calculation_value(self) -> float:
         return self._double_value
 
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+
+        return self.calculation_value == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+
+        return self.calculation_value < __value
+
+    def __le__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+
+        return self.calculation_value <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+
+        return self.calculation_value > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if not isinstance(__value, QvdValue) and not isinstance(__value, float):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+
+        return self.calculation_value >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
 class TimeValue(DualDoubleValue):
     """
     Represents a time value in a QVD file.
@@ -320,6 +551,74 @@ class TimeValue(DualDoubleValue):
         :return: The time value.
         """
         return TimeValue._serial_number_to_time(self._double_value)
+
+    def __eq__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.time)):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value == __value
+
+        return self.time == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.time)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value < __value
+
+        return self.time < __value
+
+    def __le__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.time)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value <= __value
+
+        return self.time <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.time)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value > __value
+
+        return self.time > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.time)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value >= __value
+
+        return self.time >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
 
     @staticmethod
     def _time_to_serial_number(time: dt.time) -> float:
@@ -383,6 +682,74 @@ class DateValue(DualIntegerValue):
         """
         return DateValue._serial_number_to_date(self._int_value)
 
+    def __eq__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, int) and
+            not isinstance(__value, dt.date)):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+        if isinstance(__value, int):
+            return self.calculation_value == __value
+
+        return self.date == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, int) and
+            not isinstance(__value, dt.date)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+        if isinstance(__value, int):
+            return self.calculation_value < __value
+
+        return self.date < __value
+
+    def __le__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, int) and
+            not isinstance(__value, dt.date)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+        if isinstance(__value, int):
+            return self.calculation_value <= __value
+
+        return self.date <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, int) and
+            not isinstance(__value, dt.date)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+        if isinstance(__value, int):
+            return self.calculation_value > __value
+
+        return self.date > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, int) and
+            not isinstance(__value, dt.date)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+        if isinstance(__value, int):
+            return self.calculation_value >= __value
+
+        return self.date >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
     @staticmethod
     def _date_to_serial_number(date: dt.date) -> int:
         # pylint: disable-next=invalid-name
@@ -445,6 +812,74 @@ class TimestampValue(DualDoubleValue):
         """
         return TimestampValue._serial_number_to_timestamp(self._double_value)
 
+    def __eq__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.datetime)):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value == __value
+
+        return self.timestamp == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.datetime)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value < __value
+
+        return self.timestamp < __value
+
+    def __le__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.datetime)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value <= __value
+
+        return self.timestamp <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.datetime)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value > __value
+
+        return self.timestamp > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.datetime)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value >= __value
+
+        return self.timestamp >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
     @staticmethod
     def _timestamp_to_serial_number(timestamp: dt.datetime) -> float:
         # pylint: disable-next=invalid-name
@@ -506,6 +941,74 @@ class IntervalValue(DualDoubleValue):
         :return: The interval value.
         """
         return IntervalValue._serial_number_to_interval(self._double_value)
+
+    def __eq__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.timedelta)):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value == __value
+
+        return self.interval == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.timedelta)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value < __value
+
+        return self.interval < __value
+
+    def __le__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.timedelta)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value <= __value
+
+        return self.interval <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.timedelta)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value > __value
+
+        return self.interval > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, dt.timedelta)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value >= __value
+
+        return self.interval >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
 
     @staticmethod
     def _interval_to_serial_number(interval: dt.timedelta) -> float:
@@ -572,6 +1075,18 @@ class QvdTable:
         # Ensure the number of columns matches the number of values in each record
         if len(data) > 0 and len(data[0]) != len(columns):
             raise ValueError("The number of columns must match the number of values in each record.")
+
+        # Ensure all column names are unique
+        if len(set(columns)) != len(columns):
+            raise ValueError("All column names must be unique.")
+
+        # Ensure all column names are strings
+        if not all(isinstance(column, str) for column in columns):
+            raise TypeError("All column names must be strings.")
+
+        # Ensure all values are QvdValue objects
+        if not all(isinstance(value, QvdValue) or value is None for row in data for value in row):
+            raise TypeError("All values must be QvdValue objects.")
 
         self._data: List[List[QvdValue]] = data
         self._columns: List[str] = columns
@@ -1643,22 +2158,7 @@ class QvdTable:
             >>> tbl.to_dict()
             {'columns': ['A', 'B', 'C'], 'data': [[1, 2, 3], [4, 5, 6], [7, 8, 9]}
         """
-        def _get_value_from_symbol(value: QvdValue) -> any:
-            if value is None:
-                return None
-
-            if isinstance(value, TimeValue):
-                return value.time
-            if isinstance(value, DateValue):
-                return value.date
-            if isinstance(value, TimestampValue):
-                return value.timestamp
-            if isinstance(value, IntervalValue):
-                return value.interval
-
-            return value.calculation_value
-
-        data = [[_get_value_from_symbol(symbol) for symbol in row] for row in self._data]
+        data = [[QvdTable._get_value_from_symbol(symbol) for symbol in row] for row in self._data]
         return {"columns": self._columns, "data": data}
 
     def to_pandas(self) -> "pd.DataFrame":
@@ -1682,22 +2182,7 @@ class QvdTable:
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
 
-        def _get_value_from_symbol(value: QvdValue) -> any:
-            if value is None:
-                return None
-
-            if isinstance(value, TimeValue):
-                return value.time
-            if isinstance(value, DateValue):
-                return value.date
-            if isinstance(value, TimestampValue):
-                return value.timestamp
-            if isinstance(value, IntervalValue):
-                return value.interval
-
-            return value.calculation_value
-
-        data = [[_get_value_from_symbol(symbol) for symbol in row] for row in self._data]
+        data = [[QvdTable._get_value_from_symbol(symbol) for symbol in row] for row in self._data]
         return pd.DataFrame(data, columns=self._columns)
 
     @staticmethod
@@ -1748,29 +2233,7 @@ class QvdTable:
             4    5    6
             7    8    9
         """
-        def _get_symbol_from_value(value: any) -> QvdValue:
-            if value is None:
-                return None
-
-            if isinstance(value, QvdValue):
-                return value
-
-            if isinstance(value, int):
-                return IntegerValue(value)
-            if isinstance(value, float):
-                return DoubleValue(value)
-            if isinstance(value, dt.time):
-                return TimeValue.from_time(value)
-            if isinstance(value, dt.datetime):
-                return TimestampValue.from_timestamp(value)
-            if isinstance(value, dt.date):
-                return DateValue.from_date(value)
-            if isinstance(value, dt.timedelta):
-                return IntervalValue.from_interval(value)
-
-            return StringValue(str(value))
-
-        table_data = [[_get_symbol_from_value(value) for value in row] for row in data["data"]]
+        table_data = [[QvdTable._get_symbol_from_value(value) for value in row] for row in data["data"]]
         return QvdTable(table_data, data["columns"])
 
     @staticmethod
@@ -1796,12 +2259,9 @@ class QvdTable:
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
 
-        def _get_symbol_from_value(value: any) -> QvdValue:
+        def _get_symbol_from_pandas_value(value: any) -> QvdValue:
             if value is None or pd.isna(value):
                 return None
-
-            if isinstance(value, QvdValue):
-                return value
 
             value_type = type(value)
 
@@ -1811,18 +2271,61 @@ class QvdTable:
                 return DoubleValue(value)
             if isinstance(value, pd.Timestamp):
                 return TimestampValue.from_timestamp(value.to_pydatetime())
-            if isinstance(value, dt.time):
-                return TimeValue.from_time(value)
-            if isinstance(value, dt.datetime):
-                return TimestampValue.from_timestamp(value)
-            if isinstance(value, dt.date):
-                return DateValue.from_date(value)
-            if isinstance(value, dt.timedelta):
-                return IntervalValue.from_interval(value)
             if is_datetime64_any_dtype(value_type):
                 return TimestampValue.from_timestamp(pd.Timestamp(value).to_pydatetime())
 
-            return StringValue(str(value))
+            return QvdTable._get_symbol_from_value(value)
 
-        data = [[_get_symbol_from_value(value) for value in row] for row in df.values]
+        data = [[_get_symbol_from_pandas_value(value) for value in row] for row in df.values]
         return QvdTable(data, df.columns.tolist())
+
+    @staticmethod
+    def _get_symbol_from_value(value: any) -> QvdValue:
+        """
+        Converts a raw python value to a QVD value.
+
+        :param value: The value to convert.
+        :return: The QVD value.
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, QvdValue):
+            return value
+
+        if isinstance(value, int):
+            return IntegerValue(value)
+        if isinstance(value, float):
+            return DoubleValue(value)
+        if isinstance(value, dt.time):
+            return TimeValue.from_time(value)
+        if isinstance(value, dt.datetime):
+            return TimestampValue.from_timestamp(value)
+        if isinstance(value, dt.date):
+            return DateValue.from_date(value)
+        if isinstance(value, dt.timedelta):
+            return IntervalValue.from_interval(value)
+
+        return StringValue(str(value))
+
+    @staticmethod
+    def _get_value_from_symbol(value: QvdValue) -> any:
+        """
+        Converts a QVD value to a raw python value.
+
+        :param value: The value to convert.
+        :return: The raw python value.
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, TimeValue):
+            return value.time
+        if isinstance(value, DateValue):
+            return value.date
+        if isinstance(value, TimestampValue):
+            return value.timestamp
+        if isinstance(value, IntervalValue):
+            return value.interval
+
+        return value.calculation_value
