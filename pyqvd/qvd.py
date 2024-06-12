@@ -2274,6 +2274,8 @@ class QvdTable:
                 return TimestampValue.from_timestamp(value.to_pydatetime())
             if is_datetime64_any_dtype(value_type):
                 return TimestampValue.from_timestamp(pd.Timestamp(value).to_pydatetime())
+            if isinstance(value, pd.Timedelta):
+                return IntervalValue.from_interval(value.to_pytimedelta())
 
             return QvdTable._get_symbol_from_value(value)
 
