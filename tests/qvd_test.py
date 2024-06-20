@@ -4,9 +4,10 @@ Tests the functionality related to reading files.
 
 from typing import TYPE_CHECKING
 import datetime as dt
+from decimal import Decimal
 import pytest
 from pyqvd import (QvdTable, IntegerValue, DoubleValue, StringValue, TimeValue, DateValue, TimestampValue,
-                   IntervalValue, DualIntegerValue, DualDoubleValue)
+                   IntervalValue, DualIntegerValue, DualDoubleValue, MoneyValue, QvdValue)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -126,6 +127,8 @@ def test_construct_qvd_timestamp_value():
     assert timestamp.calculation_value == 44197.375
     assert timestamp.display_value == "2021-01-01 09:00:00"
     assert timestamp.timestamp == raw_timestamp
+    assert timestamp > TimestampValue.from_timestamp(dt.datetime(2021, 1, 1, 8, 5, 0))
+    assert timestamp < dt.datetime(2021, 1, 1, 9, 5, 0)
 
 def test_construct_qvd_interval_value():
     """
@@ -138,6 +141,23 @@ def test_construct_qvd_interval_value():
     assert interval.calculation_value == 1.1041666666666667
     assert interval.display_value == "1 02:30:00"
     assert interval.interval == raw_interval
+    assert interval > IntervalValue.from_interval(dt.timedelta(days=1, hours=2, minutes=29))
+    assert interval < dt.timedelta(days=1, hours=2, minutes=31)
+
+def test_construct_qvd_money_value():
+    """
+    Tests if a QVD money value can be constructed properly.
+    """
+    raw_money = Decimal.from_float(1203.342)
+    money = MoneyValue.from_money(raw_money)
+
+    assert money is not None
+    assert money.calculation_value == 1203.342
+    assert money.display_value == "$ 1,203.34"
+    assert money == MoneyValue.from_money(raw_money)
+    assert money.money == raw_money
+    assert money > Decimal.from_float(1203.34)
+    assert money < Decimal.from_float(1203.35)
 
 def test_construct_qvd_table_from_dict():
     """
@@ -167,6 +187,7 @@ def test_construct_qvd_table_from_dict():
     assert tbl.head(2).shape == (2, 3)
     assert tbl.to_dict() == raw_tbl
     assert isinstance(tbl.at(0, "Timestamp"), TimestampValue)
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
 
 def test_construct_qvd_table_from_dict_with_datetimes():
     """
@@ -198,6 +219,36 @@ def test_construct_qvd_table_from_dict_with_datetimes():
     assert isinstance(tbl.at(0, "Dates"), DateValue)
     assert isinstance(tbl.at(0, "Timestamps"), TimestampValue)
     assert isinstance(tbl.at(0, "Times"), TimeValue)
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
+
+def test_construct_qvd_table_from_dict_with_money():
+    """
+    Tests if a QVD table, constructed from a dictionary with money values, can be read properly.
+    """
+    raw_tbl = {
+        "columns": ["Key", "Value", "Money"],
+        "data": [
+            [1, "A", Decimal.from_float(1203.342)],
+            [2, "B", Decimal.from_float(123.45)],
+            [3, "C", Decimal.from_float(12345.67)],
+            [4, "D", Decimal.from_float(123456.78)],
+            [5, "E", Decimal.from_float(1234567.89)]
+        ]
+    }
+
+    tbl = QvdTable.from_dict(raw_tbl)
+
+    assert tbl is not None
+    assert tbl.shape is not None
+    assert tbl.shape[0] == 5
+    assert tbl.shape[1] == 3
+    assert tbl.columns is not None
+    assert len(tbl.columns) == 3
+    assert tbl.data is not None
+    assert len(tbl.data) == 5
+    assert tbl.head(2).shape == (2, 3)
+    assert tbl.to_dict() == raw_tbl
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
 
 def test_construct_qvd_table_from_pandas_df():
     """
@@ -233,7 +284,7 @@ def test_construct_qvd_table_from_pandas_df():
     assert len(tbl.data) == 5
     assert tbl.head(2).shape == (2, 3)
     assert tbl.to_pandas().equals(raw_df)
-    assert isinstance(tbl.at(0, "Timestamp"), TimestampValue)
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
 
 def test_construct_qvd_table_from_pandas_df_with_datetimes():
     """
@@ -280,6 +331,43 @@ def test_construct_qvd_table_from_pandas_df_with_datetimes():
     assert isinstance(tbl.at(0, "Dates"), DateValue)
     assert isinstance(tbl.at(0, "Timestamps"), TimestampValue)
     assert isinstance(tbl.at(0, "Times"), TimeValue)
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
+
+def test_construct_qvd_table_from_pandas_df_with_money():
+    """
+    Tests if a QVD table, constructed from a pandas DataFrame with money values, can be read properly.
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    raw_df = pd.DataFrame({
+        "Key": [1, 2, 3, 4, 5],
+        "Value": ["A", "B", "C", "D", "E"],
+        "Money": [Decimal.from_float(1203.342),
+                  Decimal.from_float(123.45),
+                  Decimal.from_float(12345.67),
+                  Decimal.from_float(123456.78),
+                  Decimal.from_float(1234567.89)]
+    })
+
+    tbl = QvdTable.from_pandas(raw_df)
+
+    assert tbl is not None
+    assert tbl.shape is not None
+    assert tbl.shape[0] == 5
+    assert tbl.shape[1] == 3
+    assert tbl.columns is not None
+    assert len(tbl.columns) == 3
+    assert tbl.data is not None
+    assert len(tbl.data) == 5
+    assert tbl.head(2).shape == (2, 3)
+    assert tbl.to_pandas().equals(raw_df)
+    assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
 
 def test_qvd_table_to_dict():
     """

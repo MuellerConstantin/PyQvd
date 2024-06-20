@@ -10,7 +10,7 @@ from typing import Union, List, Dict, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, NumberFormat,
                        IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue,
-                       TimeValue, DateValue, TimestampValue, IntervalValue)
+                       TimeValue, DateValue, TimestampValue, IntervalValue, MoneyValue)
 
 class QvdFileWriter:
     """
@@ -117,6 +117,12 @@ class QvdFileWriter:
             elif symbol_types.issubset(set([IntervalValue])):
                 field_header.number_format.type = "INTERVAL"
                 field_header.number_format.fmt = "D hh:mm:ss"
+                field_header.tags.append("$numeric")
+            elif symbol_types.issubset(set([MoneyValue])):
+                field_header.number_format.type = "MONEY"
+                field_header.number_format.fmt = "$ #,##0.00;$ -#,##0.00"
+                field_header.number_format.dec = "."
+                field_header.number_format.thou = ","
                 field_header.tags.append("$numeric")
             elif symbol_types.issubset(set([IntegerValue])):
                 field_header.tags.append("$numeric")
@@ -419,6 +425,11 @@ class QvdFileWriter:
             minutes, seconds = divmod(seconds, 60)
 
             display_value = f"{days} {hours:02}:{minutes:02}:{seconds:02}"
+
+            return (b"\06" + struct.pack("<d", value.calculation_value) +
+                    str.encode(display_value, encoding="utf-8") + b"\0")
+        elif isinstance(value, MoneyValue):
+            display_value = f"$ {value.calculation_value:,.2f}"
 
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(display_value, encoding="utf-8") + b"\0")

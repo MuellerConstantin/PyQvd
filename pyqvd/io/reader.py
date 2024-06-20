@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
                        DualIntegerValue, DualDoubleValue, QvdTableHeader, QvdFieldHeader,
                        NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue,
-                       IntervalValue)
+                       IntervalValue, MoneyValue)
 
 class QvdFileReader:
     """
@@ -167,6 +167,8 @@ class QvdFileReader:
 
                     if field.number_format.type == "DATE":
                         symbols.append(DateValue(int_value, string_value))
+                    elif field.number_format.type == "MONEY":
+                        symbols.append(MoneyValue(int_value, string_value))
                     else:
                         symbols.append(DualIntegerValue(int_value, string_value))
                 elif symbol_type == 6:
@@ -188,6 +190,8 @@ class QvdFileReader:
                         symbols.append(TimeValue(double_value, string_value))
                     elif field.number_format.type == "INTERVAL":
                         symbols.append(IntervalValue(double_value, string_value))
+                    elif field.number_format.type == "MONEY":
+                        symbols.append(MoneyValue(double_value, string_value))
                     else:
                         symbols.append(DualDoubleValue(double_value, string_value))
                 else:

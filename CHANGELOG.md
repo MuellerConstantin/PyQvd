@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for pandas' `Timedelta` data type in QVD data tables during reading and writing.
+- Added support for QVD's money data type in QVD data tables during reading and writing. In Python
+this is represented as a `Decimal` object.
 
 ## [2.0.0] - 2024-06-09
 

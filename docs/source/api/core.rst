@@ -88,6 +88,14 @@ IntervalValue
 
     .. automethod:: __init__
 
+MoneyValue
+^^^^^^^^^^
+
+.. autoclass:: pyqvd.MoneyValue
+    :members:
+
+    .. automethod:: __init__
+
 QvdTable
 ^^^^^^^^
 

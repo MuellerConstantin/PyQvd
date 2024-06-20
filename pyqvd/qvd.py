@@ -5,6 +5,7 @@ Module contains the core classes and functions for dealing with QVD files. The m
 
 from copy import deepcopy
 import datetime as dt
+from decimal import Decimal
 from functools import cmp_to_key
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
@@ -1057,6 +1058,127 @@ class IntervalValue(DualDoubleValue):
 
         return IntervalValue(serial_number, display_value)
 
+class MoneyValue(DualDoubleValue):
+    """
+    Represents a money value in a QVD file. Money values are stored as dual double values where the
+    double value represents the monetary value and the string value represents the money in a human-
+    readable format. This data type does not exist in QVD files and is provided for convenience. In
+    QVD files, money values are stored as dual double values with a number format of "MONEY" if the
+    column is a uniform money column.
+
+    .. important::
+
+        It is important to note that Python does not have a built-in money data type. This class is
+        provided as a convenience for working with money values in QVD files. It is recommended to use
+        the ``decimal.Decimal`` class for monetary calculations in Python. Because it is not possible to
+        differ between a ``decimal.Decimal`` value that is representing money and a ``decimal.Decimal``
+        value that is representing a non-monetary value, all ``decimal.Decimal`` values are considered
+        to be monetary values and will therefore be converted to ``MoneyValue`` objects when importing
+        data from a dictionary or a pandas DataFrame for example.
+    """
+    @property
+    def money(self) -> Decimal:
+        """
+        Returns the money value.
+
+        :return: The money value.
+        """
+        return Decimal.from_float(self._double_value)
+
+    def __eq__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, Decimal)):
+            return False
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value == __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value == __value
+
+        return self.money == __value
+
+    def __lt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, Decimal)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value < __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value < __value
+
+        return self.money < __value
+
+    def __le__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, Decimal)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value <= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value <= __value
+
+        return self.money <= __value
+
+    def __gt__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, Decimal)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value > __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value > __value
+
+        return self.money > __value
+
+    def __ge__(self, __value: object) -> bool:
+        if (not isinstance(__value, QvdValue) and
+            not isinstance(__value, float) and
+            not isinstance(__value, Decimal)):
+            return NotImplemented
+
+        if isinstance(__value, QvdValue):
+            return self.calculation_value >= __value.calculation_value
+        if isinstance(__value, float):
+            return self.calculation_value >= __value
+
+        return self.money >= __value
+
+    def __hash__(self) -> int:
+        return hash(self.calculation_value)
+
+    @staticmethod
+    def from_money(money: Decimal) -> "MoneyValue":
+        """
+        Creates a new money value from a money value.
+
+        :param money: The money value.
+        :return: The money value.
+        """
+        display_value = f"$ {money:,.2f}"
+        calculation_value = float(money)
+
+        return MoneyValue(calculation_value, display_value)
+
+    @staticmethod
+    def from_serial_number(serial_number: float) -> "MoneyValue":
+        """
+        Creates a new money value from a serial number.
+
+        :param serial_number: The serial number representing the money.
+        :return: The money value.
+        """
+        money = Decimal.from_float(serial_number)
+        display_value = f"$ {money:,.2f}"
+
+        return MoneyValue(serial_number, display_value)
+
 class QvdTable:
     """
     Core class for representing a QVD data table.
@@ -1526,7 +1648,7 @@ class QvdTable:
 
         if index < 0 or index > len(self._data):
             raise IndexError("Index out of range")
-        
+
         row = [value if isinstance(value, QvdValue) else QvdTable._get_symbol_from_value(value) for value in row]
 
         self._data.insert(index, row)
@@ -2300,6 +2422,8 @@ class QvdTable:
             return IntegerValue(value)
         if isinstance(value, float):
             return DoubleValue(value)
+        if isinstance(value, Decimal):
+            return MoneyValue.from_money(value)
         if isinstance(value, dt.time):
             return TimeValue.from_time(value)
         if isinstance(value, dt.datetime):
@@ -2330,5 +2454,7 @@ class QvdTable:
             return value.timestamp
         if isinstance(value, IntervalValue):
             return value.interval
+        if isinstance(value, MoneyValue):
+            return value.money
 
         return value.calculation_value
