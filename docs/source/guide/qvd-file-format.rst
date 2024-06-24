@@ -1,5 +1,8 @@
+.. _qvd:
+
+###############
 QVD File Format
-===============
+###############
 
 The *Qlik View Data (QVD)* file format is a binary file format that is used by QlikView, and
 later Qlik Sense, to store data. The format is proprietary and contains one data table per file.
@@ -10,8 +13,9 @@ data table stored in the QVD file, such as the number of data records and the na
 The symbol table contains the actual distinct values for each field and the index table contains the
 actual data records, consisting of references to the symbol table.
 
+**********
 XML Header
-----------
+**********
 
 The XML header contains meta information about the data table stored in the QVD file. The header is
 always located at the beginning of the file and is in human readable text format, XML. The header
@@ -20,8 +24,9 @@ of the fields. In addition, the header parsing instructions for the symbol and i
 the offset and length. The complete header is written in UTF-8 encoded XML and is separated from the
 binary part of the file by a carriage return and line feed (CRLF) sequence followed by a null byte.
 
+************
 Symbol Table
-------------
+************
 
 The symbol table contains the actual distinct values for each field. The symbol table is a binary
 table that is stored in the QVD file after the XML header. The symbol table is stored in a column-major
@@ -84,8 +89,9 @@ Basically, the symbol table is a memory block that contains the distinct values 
 of the fields in the symbol table is the same as in the XML header. Each single value is prefixed with
 a type byte that indicates the data type of the value itself.
 
+***********
 Index Table
------------
+***********
 
 The index table contains the actual data records, consisting of references to the symbol table. This means
 that the index table does not contain the actual cell values, but a reference to the cell's value in the

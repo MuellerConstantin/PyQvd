@@ -1,5 +1,6 @@
+############
 Introduction
-============
+############
 
 This user guide is intended to provide a comprehensive guide to the use of the
 PyQvd library. The PyQvd library is a Python library that provides a simple
@@ -11,8 +12,9 @@ The PyQvd library provides a simple interface to read and write QVD files. The
 library is designed to be easy to use and to provide a simple and intuitive
 interface to the QVD file format.
 
+*******
 Reading
--------
+*******
 
 The most common use case for the PyQvd library is to read data from a QVD file on
 disk. To read data from a QVD file, you can use the static :func:`pyqvd.qvd.QvdTable.from_qvd`
@@ -47,8 +49,9 @@ following code:
     obj = s3.get_object(Bucket="my-bucket", Key="sample.qvd")
     tbl = QvdTable.from_stream(obj["Body"])
 
+*****************
 Data Manipulation
------------------
+*****************
 
 After reading/constructing a QVD table, you can perform various operations on the data. The
 :class:`pyqvd.qvd.QvdTable` class provides a number of methods to help you analyze and
@@ -57,7 +60,7 @@ overview of the possibilities. For a complete overview of the available methods,
 to the :ref:`api` documentation.
 
 Retrevieve and Edit
-^^^^^^^^^^^^^^^^^^^
+===================
 
 First of all, you can retrieve and edit the existing data in the QVD table. For example,
 you can retrieve single values or slices of the data using the :func:`pyqvd.qvd.QvdTable.get`
@@ -104,7 +107,7 @@ has also a shorthand notation available like the :func:`pyqvd.qvd.QvdTable.get` 
     tbl[1] = [1, 2, 3, 4, 5]
 
 Add and Remove
-^^^^^^^^^^^^^^
+==============
 
 In addition you can also add new rows or columns to the QVD table or remove existing rows
 or columns if needed. For example, to add a new row to the QVD table, you can use the
@@ -134,7 +137,7 @@ QVD table again.
     tbl.drop("A", axis="columns")
 
 Filtering and Sorting
-^^^^^^^^^^^^^^^^^^^^^
+=====================
 
 The :class:`pyqvd.qvd.QvdTable` class also supports basic filtering and sorting operations.
 Therefor, the class provides the :func:`pyqvd.qvd.QvdTable.filter_by` and
@@ -153,7 +156,7 @@ of individual columns.
     new_tbl = tbl.sort_by("A", comparator=lambda x, y: 1 if x.calculation_value > y.calculation_value else -1 if x.calculation_value < y.calculation_value else 0)
 
 Concatenate and Join
-^^^^^^^^^^^^^^^^^^^^
+====================
 
 The :class:`pyqvd.qvd.QvdTable` class also supports concatenation and joining of multiple
 QVD tables. The :func:`pyqvd.qvd.QvdTable.concat` method can be used to concatenate multiple
@@ -176,7 +179,7 @@ join columns and the suffixes for the columns that are present in both tables.
     new_tbl = tbl.join(tbl2, on=["A", "B"], how="left", lsuffix="_left", rsuffix="_right")
 
 Import and Export
-^^^^^^^^^^^^^^^^^
+=================
 
 Instead of reading the data from a QVD file, you can also import data from other in-memory sources
 such as a dictionary or a pandas DataFrame. This can be done by using the respective methods like
@@ -206,8 +209,9 @@ For example, to export the data in the QVD table to a pandas DataFrame, you can 
 
     df = tbl.to_pandas()
 
+*******
 Writing
--------
+*******
 
 After analyzing and manipulating the data in the QVD table, you can write the data back to a QVD
 file on disk. To write the data to a QVD file, you can use the :func:`pyqvd.qvd.QvdTable.to_qvd`

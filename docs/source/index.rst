@@ -1,5 +1,6 @@
+#################################
 Welcome to PyQvd's documentation!
-=================================
+#################################
 
 .. toctree::
    :maxdepth: 3
@@ -24,8 +25,9 @@ some features of this library, especially connectors to third-party data sources
 libraries like `pandas <https://pandas.pydata.org/>`_. If you want to use these features, you need to
 install the required libraries manually.
 
+*******
 Contact
--------
+*******
 
 For technical issues, bug reports and feature request and more please use the
 `issue section <https://github.com/MuellerConstantin/PyQvd/issues>`_. on
@@ -37,8 +39,9 @@ This helps me to understand the needs of the community and to prioritize the dev
 
 Email: `info@mueller-constantin.de <mailto:info@mueller-constantin.de>`_
 
+*******
 License
--------
+*******
 
 PyQvd is licensed under the `MIT License <https://opensource.org/licenses/MIT>`_.
 

@@ -1,15 +1,17 @@
 .. _core:
 
+####
 Core
-====
+####
 
+****************
 :mod:`pyqvd.qvd`
-----------------
+****************
 
 .. automodule:: pyqvd.qvd
 
 QvdValue
-^^^^^^^^
+========
 
 .. autoclass:: pyqvd.QvdValue
     :members:
@@ -17,7 +19,7 @@ QvdValue
     .. automethod:: __init__
 
 IntegerValue
-^^^^^^^^^^^^
+============
 
 .. autoclass:: pyqvd.IntegerValue
     :members:
@@ -25,7 +27,7 @@ IntegerValue
     .. automethod:: __init__
 
 DoubleValue
-^^^^^^^^^^^
+===========
 
 .. autoclass:: pyqvd.DoubleValue
     :members:
@@ -33,7 +35,7 @@ DoubleValue
     .. automethod:: __init__
 
 StringValue
-^^^^^^^^^^^
+===========
 
 .. autoclass:: pyqvd.StringValue
     :members:
@@ -41,7 +43,7 @@ StringValue
     .. automethod:: __init__
 
 DualIntegerValue
-^^^^^^^^^^^^^^^^
+================
 
 .. autoclass:: pyqvd.DualIntegerValue
     :members:
@@ -49,7 +51,7 @@ DualIntegerValue
     .. automethod:: __init__
 
 DualDoubleValue
-^^^^^^^^^^^^^^^
+===============
 
 .. autoclass:: pyqvd.DualDoubleValue
     :members:
@@ -57,7 +59,7 @@ DualDoubleValue
     .. automethod:: __init__
 
 TimeValue
-^^^^^^^^^
+=========
 
 .. autoclass:: pyqvd.TimeValue
     :members:
@@ -65,7 +67,7 @@ TimeValue
     .. automethod:: __init__
 
 DateValue
-^^^^^^^^^
+=========
 
 .. autoclass:: pyqvd.DateValue
     :members:
@@ -73,7 +75,7 @@ DateValue
     .. automethod:: __init__
 
 TimestampValue
-^^^^^^^^^^^^^^
+==============
 
 .. autoclass:: pyqvd.TimestampValue
     :members:
@@ -81,7 +83,7 @@ TimestampValue
     .. automethod:: __init__
 
 IntervalValue
-^^^^^^^^^^^^^
+=============
 
 .. autoclass:: pyqvd.IntervalValue
     :members:
@@ -89,7 +91,7 @@ IntervalValue
     .. automethod:: __init__
 
 MoneyValue
-^^^^^^^^^^
+==========
 
 .. autoclass:: pyqvd.MoneyValue
     :members:
@@ -97,7 +99,7 @@ MoneyValue
     .. automethod:: __init__
 
 QvdTable
-^^^^^^^^
+========
 
 .. autoclass:: pyqvd.QvdTable
     :members:

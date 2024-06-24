@@ -1,8 +1,10 @@
+###############
 Getting Started
-===============
+###############
 
+************
 Requirements
-------------
+************
 
 Python 3.8.+
 
@@ -16,8 +18,9 @@ It is generally recommended to use
 `python virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ or
 `conda virtual environment <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_.
 
+************
 Installation
-------------
+************
 
 PyQvd is a Python library available through `pypi <https://pypi.org/>`_. The recommended way to
 install and maintain PyQvd as a dependency is through the package installer (PIP). Before
@@ -29,8 +32,9 @@ To use PyQvd, first install it using pip:
 
    (.venv) $ pip install PyQvd
 
+*****
 Usage
------
+*****
 
 To use PyQvd in a project, import the module and create a ``QvdTable`` object. The ``QvdTable``
 class is the primary interface for working with QVD files in PyQvd. It represents the parsed data

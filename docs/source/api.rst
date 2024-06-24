@@ -1,7 +1,8 @@
 .. _api:
 
+#############
 API Reference
-=============
+#############
 
 This part of the documentation covers all the public classes and functions of
 the PyQvd library. It is organized into a couple of sections:
