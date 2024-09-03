@@ -2389,9 +2389,9 @@ class QvdTable:
             value_type = type(value)
 
             if is_integer_dtype(value_type):
-                return IntegerValue(value)
+                return IntegerValue(int(value))
             if is_float_dtype(value_type):
-                return DoubleValue(value)
+                return DoubleValue(float(value))
             if isinstance(value, pd.Timestamp):
                 return TimestampValue.from_timestamp(value.to_pydatetime())
             if is_datetime64_any_dtype(value_type):
