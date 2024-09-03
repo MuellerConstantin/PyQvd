@@ -20,7 +20,7 @@ class QvdFileWriterOptions:
     """
     Class for storing options for the QVD file writer.
     """
-    table_name: str = "Default"
+    table_name: str = "UNKNOWN"
     time_formatter: TimeValueFormatter = TimeValueFormatter("hh:mm:ss")
     date_formatter: DateValueFormatter = DateValueFormatter("YYYY-MM-DD")
     timestamp_formatter: TimestampValueFormatter = TimestampValueFormatter("YYYY-MM-DD hh:mm:ss[.fff]")
@@ -43,7 +43,7 @@ class QvdFileWriter:
         """
         self._target = target
         self._table = table
-        self._options = options
+        self._options = options if options is not None else QvdFileWriterOptions()
 
         self._header: QvdTableHeader = None
         self._symbol_table: List[Dict[QvdValue, int]] = None
@@ -62,7 +62,7 @@ class QvdFileWriter:
         self._header.source_create_utc_time = ""
         self._header.source_file_utc_time = ""
         self._header.stale_utc_time = ""
-        self._header.table_name = "Default"
+        self._header.table_name = self._options.table_name
         self._header.source_file_size = -1
         self._header.fields = []
         self._header.compression = ""
