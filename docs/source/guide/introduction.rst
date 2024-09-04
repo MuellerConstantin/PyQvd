@@ -245,3 +245,21 @@ S3 Object Storage, you could use the following code:
 
     s3 = boto3.client("s3")
     obj = s3.put_object(Bucket="my-bucket", Key="output.qvd", Body=buffer.getvalue())
+
+By default, opinionated settings are used when writing the QVD file. However, you can also specify
+custom settings when writing the QVD file. For example, you can specify the table's name or the
+format that is used to write the data to the QVD file. Therefore you can use the writer's options
+class :class:`pyqvd.io.QvdFileWriterOptions` to specify the custom settings and so called formatters
+to format the data.
+
+.. code-block:: python
+
+    from pyqvd.io import QvdFileWriterOptions, DateValueFormatter
+
+    date_formatter = DateValueFormatter("DD.MM.YYYY")
+    options = QvdFileWriterOptions(table_name="my-table", date_formatter=date_formatter)
+
+    tbl.to_qvd("output.qvd", options)
+
+For a complete list of available options and formatters, as well as information about the supported
+format strings, please refer to the :ref:`api` documentation.

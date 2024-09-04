@@ -5,4 +5,6 @@ and written to/from any arbitrary stream-like target using the :class:`pyqvd.io.
 """
 
 from .reader import QvdFileReader
-from .writer import QvdFileWriter
+from .writer import QvdFileWriter, QvdFileWriterOptions
+from .format import (TimeValueFormatter, DateValueFormatter, TimestampValueFormatter,
+                     IntervalValueFormatter, MoneyValueFormatter)

@@ -14,6 +14,7 @@ from tabulate import tabulate
 
 if TYPE_CHECKING:
     import pandas as pd
+    from pyqvd.io import QvdFileWriterOptions
 
 @dataclass
 class NumberFormat:
@@ -2240,7 +2241,7 @@ class QvdTable:
     def __hash__(self) -> int:
         return hash((tuple(tuple(row) for row in self._data), tuple(self._columns)))
 
-    def to_qvd(self, path: str):
+    def to_qvd(self, path: str, options: "QvdFileWriterOptions" = None):
         """
         Persists the data table to a QVD file.
 
@@ -2249,9 +2250,9 @@ class QvdTable:
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.writer import QvdFileWriter
 
-        QvdFileWriter(path, self).write()
+        QvdFileWriter(path, self, options).write()
 
-    def to_stream(self, target: BinaryIO):
+    def to_stream(self, target: BinaryIO, options: "QvdFileWriterOptions" = None):
         """
         Writes the QVD file to a binary stream.
 
@@ -2260,7 +2261,7 @@ class QvdTable:
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.writer import QvdFileWriter
 
-        QvdFileWriter(target, self).write()
+        QvdFileWriter(target, self, options).write()
 
     def to_dict(self) -> Dict[str, any]:
         """

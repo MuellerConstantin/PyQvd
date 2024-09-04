@@ -8,23 +8,43 @@ import struct
 import io
 from typing import Union, List, Dict, BinaryIO
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 from pyqvd.qvd import (QvdTable, QvdValue, QvdFieldHeader, QvdTableHeader, NumberFormat,
                        IntegerValue, DoubleValue, StringValue, DualIntegerValue, DualDoubleValue,
                        TimeValue, DateValue, TimestampValue, IntervalValue, MoneyValue)
+from pyqvd.io.format import (TimeValueFormatter, DateValueFormatter, IntervalValueFormatter,
+                             TimestampValueFormatter, MoneyValueFormatter)
+
+@dataclass
+class QvdFileWriterOptions:
+    """
+    Class for storing options for the QVD file writer.
+    """
+    table_name: str = "UNKNOWN"
+    time_formatter: TimeValueFormatter = TimeValueFormatter("hh:mm:ss")
+    date_formatter: DateValueFormatter = DateValueFormatter("YYYY-MM-DD")
+    timestamp_formatter: TimestampValueFormatter = TimestampValueFormatter("YYYY-MM-DD hh:mm:ss[.fff]")
+    interval_formatter: IntervalValueFormatter = IntervalValueFormatter("D hh:mm:ss")
+    money_formatter: MoneyValueFormatter = MoneyValueFormatter(thousand_separator=",", decimal_separator=".",
+                                                                currency_symbol="$", decimal_precision=2)
 
 class QvdFileWriter:
     """
     Class allows to write a :class:`QvdTable` as a QVD file to disk.
     """
-    def __init__(self, target: Union[str, BinaryIO], table: QvdTable):
+    def __init__(self, target: Union[str, BinaryIO], table: QvdTable,
+                 options: QvdFileWriterOptions = QvdFileWriterOptions()):
         """
         Constructs a new QVD file writer. The target can be either a file path or a BinaryIO object.
 
         :param target: The destination to which the Qvd file should be written.
         :param table: The data to persist.
+        :param options: The options for the QVD file writer.
         """
         self._target = target
         self._table = table
+        self._options = options if options is not None else QvdFileWriterOptions()
+
         self._header: QvdTableHeader = None
         self._symbol_table: List[Dict[QvdValue, int]] = None
         self._index_table: List[List[int]] = None
@@ -42,7 +62,7 @@ class QvdFileWriter:
         self._header.source_create_utc_time = ""
         self._header.source_file_utc_time = ""
         self._header.stale_utc_time = ""
-        self._header.table_name = "Default"
+        self._header.table_name = self._options.table_name
         self._header.source_file_size = -1
         self._header.fields = []
         self._header.compression = ""
@@ -74,7 +94,7 @@ class QvdFileWriter:
                 symbols[value] = len(symbols)
 
             # Extend the symbol table with the new symbols
-            current_symbols_buffer = b"".join([QvdFileWriter._get_symbol_byte_representation(symbol)
+            current_symbols_buffer = b"".join([self._get_symbol_byte_representation(symbol)
                                                for symbol in symbols])
             self._symbol_table_buffer += current_symbols_buffer
             self._symbol_table[column_index] = symbols
@@ -101,28 +121,28 @@ class QvdFileWriter:
 
             if symbol_types.issubset(set([TimeValue])):
                 field_header.number_format.type = "TIME"
-                field_header.number_format.fmt = "hh:mm:ss"
+                field_header.number_format.fmt = self._options.time_formatter.get_qvd_format_string()
                 field_header.tags.append("$numeric")
             elif symbol_types.issubset(set([DateValue])):
                 field_header.number_format.type = "DATE"
-                field_header.number_format.fmt = "YYYY-MM-DD"
+                field_header.number_format.fmt = self._options.date_formatter.get_qvd_format_string()
                 field_header.tags.append("$date")
                 field_header.tags.append("$numeric")
                 field_header.tags.append("$integer")
             elif symbol_types.issubset(set([TimestampValue])):
                 field_header.number_format.type = "TIMESTAMP"
-                field_header.number_format.fmt = "YYYY-MM-DD hh:mm:ss[.fff]"
+                field_header.number_format.fmt = self._options.timestamp_formatter.get_qvd_format_string()
                 field_header.tags.append("$timestamp")
                 field_header.tags.append("$numeric")
             elif symbol_types.issubset(set([IntervalValue])):
                 field_header.number_format.type = "INTERVAL"
-                field_header.number_format.fmt = "D hh:mm:ss"
+                field_header.number_format.fmt = self._options.interval_formatter.get_qvd_format_string()
                 field_header.tags.append("$numeric")
             elif symbol_types.issubset(set([MoneyValue])):
                 field_header.number_format.type = "MONEY"
-                field_header.number_format.fmt = "$ #,##0.00;$ -#,##0.00"
-                field_header.number_format.dec = "."
-                field_header.number_format.thou = ","
+                field_header.number_format.fmt = self._options.money_formatter.get_qvd_format_string()
+                field_header.number_format.dec = self._options.money_formatter.decimal_separator
+                field_header.number_format.thou = self._options.money_formatter.thousand_separator
                 field_header.tags.append("$numeric")
             elif symbol_types.issubset(set([IntegerValue])):
                 field_header.tags.append("$numeric")
@@ -392,8 +412,7 @@ class QvdFileWriter:
         self._build_header()
         self._write_data()
 
-    @staticmethod
-    def _get_symbol_byte_representation(value: QvdValue) -> bytes:
+    def _get_symbol_byte_representation(self, value: QvdValue) -> bytes:
         """
         Returns the byte representation of a symbol value.
 
@@ -402,34 +421,32 @@ class QvdFileWriter:
         """
         if isinstance(value, TimeValue):
             # Recreate display value to ensure uniform formatting
-            display_value = value.time.strftime("%H:%M:%S")
+            display_value = self._options.time_formatter.format(value)
 
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(display_value, encoding="utf-8") + b"\0")
         elif isinstance(value, DateValue):
             # Recreate display value to ensure uniform formatting
-            display_value = value.date.strftime("%Y-%m-%d")
+            display_value = self._options.date_formatter.format(value)
 
             return (b"\05" +
                     value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
                     str.encode(display_value, encoding="utf-8") + b"\0")
         elif isinstance(value, TimestampValue):
             # Recreate display value to ensure uniform formatting
-            display_value = value.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            display_value = self._options.timestamp_formatter.format(value)
 
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(display_value, encoding="utf-8") + b"\0")
         elif isinstance(value, IntervalValue):
-            days = value.interval.days
-            hours, seconds = divmod(value.interval.seconds, 60 * 60)
-            minutes, seconds = divmod(seconds, 60)
-
-            display_value = f"{days} {hours:02}:{minutes:02}:{seconds:02}"
+            # Recreate display value to ensure uniform formatting
+            display_value = self._options.interval_formatter.format(value)
 
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(display_value, encoding="utf-8") + b"\0")
         elif isinstance(value, MoneyValue):
-            display_value = f"$ {value.calculation_value:,.2f}"
+            # Recreate display value to ensure uniform formatting
+            display_value = self._options.money_formatter.format(value)
 
             return (b"\06" + struct.pack("<d", value.calculation_value) +
                     str.encode(display_value, encoding="utf-8") + b"\0")
