@@ -2,8 +2,10 @@
 Module for reading QVD files into memory. Contains the required logic to parse the binary data of a QVD file.
 """
 
+import math
 import struct
 import io
+from collections.abc import Iterator
 from typing import Union, List, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
@@ -11,18 +13,54 @@ from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValu
                        NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue,
                        IntervalValue, MoneyValue)
 
+class QvdFileReaderIterator(Iterator):
+    """
+    Iterator class for reading QVD files into memory. Parses the binary data of a QVD file and
+    converts it into a :class:`.QvdTable` object.
+    """
+    def __init__(self, reader: "QvdFileReader", chunk_size: int):
+        """
+        Constructs a new QVD file parser iterator.
+
+        :param reader: The QVD file reader.
+        :param chunk_size: The size of the chunks to read as number of records.
+        """
+        self._reader = reader
+        self._chunk_size = chunk_size
+        self._current_chunk = 0
+
+    def __next__(self):
+        # pylint: disable-next=protected-access
+        if self._current_chunk * self._chunk_size >= self._reader._header.no_of_records:
+            raise StopIteration
+
+        # pylint: disable-next=protected-access
+        chunk = self._reader._parse_index_table_chunk(self._current_chunk * self._chunk_size, self._chunk_size)
+        self._current_chunk += 1
+
+        # pylint: disable-next=protected-access
+        data = [self._reader._decode_record(record) for record in chunk]
+        # pylint: disable-next=protected-access
+        columns = [field.field_name for field in self._reader._header.fields]
+
+        return QvdTable(data, columns)
+
+    def __len__(self):
+        return math.ceil(self._reader._header.no_of_records / self._chunk_size)
+
 class QvdFileReader:
     """
     Class for reading QVD files into memory. Parses the binary data of a QVD file and converts it into a
     :class:`.QvdTable` object.
     """
-    def __init__(self, source: Union[str, BinaryIO]):
+    def __init__(self, source: Union[str, BinaryIO], chunk_size: int = None):
         """
         Constructs a new QVD file parser. The source can be either a file path or a BinaryIO object.
 
         :param source: The source to the QVD file.
         """
         self._source: Union[str, BinaryIO] = source
+        self._chunk_size: int = chunk_size
         self._buffer: bytes = None
         self._header: QvdTableHeader = None
         self._symbol_table: List[List[QvdValue]] = None
@@ -232,7 +270,69 @@ class QvdFileReader:
             self._index_table.append(record_indices)
             pointer += self._header.record_byte_size
 
-    def read(self) -> QvdTable:
+    def _parse_index_table_chunk(self, chunk_offset: int, chunk_size: int) -> List[List[int]]:
+        """
+        Parses a chunk of the index table of the QVD file.
+
+        :param chunk_offset: The offset of the chunk as number of records.
+        :param chunk_size: The size of the chunk as number of records.
+        :return: The chunk of the index table.
+        """
+        if chunk_offset < 0 or chunk_offset >= self._header.no_of_records or chunk_size < 0:
+            raise ValueError("The chunk is out of range.")
+
+        chunk: List[List[int]] = []
+        chunk_byte_offset = self._index_table_offset + chunk_offset * self._header.record_byte_size
+        chunk_byte_size = chunk_size * self._header.record_byte_size
+
+        if chunk_byte_offset + chunk_byte_size > len(self._buffer):
+            chunk_byte_size = len(self._buffer) - chunk_byte_offset
+
+        chunk_buffer = self._buffer[chunk_byte_offset:chunk_byte_offset + chunk_byte_size]
+
+        pointer = 0
+
+        while pointer < len(chunk_buffer):
+            record_buffer = chunk_buffer[pointer:pointer + self._header.record_byte_size]
+            record_buffer = record_buffer[::-1]
+            record_buffer = struct.unpack("<" + "B" * len(record_buffer), record_buffer)
+
+            mask = "".join(format(byte, "08b") for byte in record_buffer)
+            mask = mask[::-1]
+            mask = [int(bit) for bit in mask]
+
+            record_indices = []
+
+            for field in self._header.fields:
+                if field.bit_width == 0:
+                    symbol_index = 0
+                else:
+                    symbol_index = QvdFileReader._convert_bits_to_int32(
+                        mask[field.bit_offset:field.bit_offset + field.bit_width])
+
+                symbol_index += field.bias
+                record_indices.append(symbol_index)
+
+            chunk.append(record_indices)
+            pointer += self._header.record_byte_size
+
+        return chunk
+
+    def _decode_record(self, record: List[int]) -> List[QvdValue]:
+        """
+        Decodes a record from the index table.
+        """
+        decoded_record = [None] * len(record)
+
+        for field_index, symbol_index in enumerate(record):
+            if symbol_index < 0:
+                decoded_record[field_index] = None
+            else:
+                decoded_record[field_index] = self._symbol_table[field_index][symbol_index]
+
+        return decoded_record
+
+    def read(self) -> Union[QvdTable, Iterator[QvdTable]]:
         """
         Reads the QVD file and returns its data as a :class:`.QvdTable` object.
 
@@ -241,26 +341,16 @@ class QvdFileReader:
         self._read_data()
         self._parse_header()
         self._parse_symbol_table()
-        self._parse_index_table()
 
-        def _get_record(index: int) -> List[QvdValue]:
-            if index < 0 or index >= len(self._index_table):
-                raise IndexError("Index out of range.")
+        if self._chunk_size is None:
+            self._parse_index_table()
 
-            record = [None] * len(self._index_table[index])
+            data = [self._decode_record(record) for record in self._index_table]
+            columns = [field.field_name for field in self._header.fields]
 
-            for field_index, symbol_index in enumerate(self._index_table[index]):
-                if symbol_index < 0:
-                    record[field_index] = None
-                else:
-                    record[field_index] = self._symbol_table[field_index][symbol_index]
-
-            return record
-
-        data = [_get_record(index) for index in range(len(self._index_table))]
-        columns = [field.field_name for field in self._header.fields]
-
-        return QvdTable(data, columns)
+            return QvdTable(data, columns)
+        else:
+            return QvdFileReaderIterator(self, self._chunk_size)
 
     @staticmethod
     def _convert_bits_to_int32(bits: List[int]) -> int:

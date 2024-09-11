@@ -8,6 +8,7 @@ import datetime as dt
 from decimal import Decimal
 from functools import cmp_to_key
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
 from dataclasses import dataclass
 from tabulate import tabulate
@@ -2310,17 +2311,18 @@ class QvdTable:
         return pd.DataFrame(data, columns=self._columns)
 
     @staticmethod
-    def from_qvd(path: str) -> "QvdTable":
+    def from_qvd(path: str, chunk_size: int = None) -> Union["QvdTable", Iterator["QvdTable"]]:
         """
         Loads a QVD file and returns its data table.
 
         :param path: The path to the QVD file.
+        :param chunk_size: Optional chunk size, as number of records, to read the QVD file in chunks.
         :return: The data table of the QVD file.
         """
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.reader import QvdFileReader
 
-        return QvdFileReader(path).read()
+        return QvdFileReader(path, chunk_size).read()
 
     @staticmethod
     def from_stream(source: BinaryIO) -> "QvdTable":
