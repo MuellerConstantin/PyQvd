@@ -32,6 +32,8 @@ class QvdFileReaderIterator(Iterator):
     def __next__(self):
         # pylint: disable-next=protected-access
         if self._current_chunk * self._chunk_size >= self._reader._header.no_of_records:
+            # pylint: disable-next=protected-access
+            self._reader._stream.close()
             raise StopIteration
 
         # pylint: disable-next=protected-access
@@ -60,44 +62,56 @@ class QvdFileReader:
         :param source: The source to the QVD file.
         """
         self._source: Union[str, BinaryIO] = source
+        self._stream: BinaryIO = None
         self._chunk_size: int = chunk_size
-        self._buffer: bytes = None
-        self._header: QvdTableHeader = None
-        self._symbol_table: List[List[QvdValue]] = None
-        self._index_table: List[List[int]] = None
-        self._header_offset: int = None
         self._symbol_table_offset: int = None
         self._index_table_offset: int = None
 
-    def _read_data(self):
+        self._header_buffer: bytes = None
+        self._header: QvdTableHeader = None
+        self._symbol_table_buffer: bytes = None
+        self._symbol_table: List[List[QvdValue]] = None
+        self._index_table_buffer: bytes = None
+        self._index_table: List[List[int]] = None
+
+    def _read_header_data(self):
         """
-        Reads the data of the QVD file into memory.
+        Reads the header data of the QVD file into memory.
         """
-        if isinstance(self._source, str):
-            with open(self._source, "rb") as file:
-                self._buffer = file.read()
-        elif isinstance(self._source, (io.RawIOBase, io.BufferedIOBase)):
-            self._buffer = self._source.read()
-        else:
-            raise ValueError("Unsupported source type. Please provide either a file path or a BinaryIO object.")
+        # pylint: disable-next=invalid-name
+        HEADER_DELIMITER = "\r\n\0"
+
+        buffer = b""
+
+        self._stream.seek(0)
+
+        while True:
+            block = self._stream.read(512)
+
+            if not block:
+                break
+
+            buffer += block
+
+            pos = buffer.find(str.encode(HEADER_DELIMITER))
+
+            if pos != -1:
+                buffer = buffer[:pos + len(HEADER_DELIMITER)]
+                break
+
+        if not buffer or buffer.find(str.encode(HEADER_DELIMITER)) == -1:
+            raise ValueError("The XML header section does not exist or is not properly delimited from the binary data.")
+
+        self._header_buffer = buffer
+        self._symbol_table_offset = len(buffer)
 
     def _parse_header(self):
         """
         Parses the header of the QVD file.
         """
-        # pylint: disable-next=invalid-name
-        HEADER_DELIMITER = "\r\n\0"
+        self._read_header_data()
 
-        header_begin_index: int = 0
-        header_delimiter_index: int = self._buffer.find(str.encode(HEADER_DELIMITER), header_begin_index)
-
-        if header_delimiter_index == -1:
-            raise ValueError("The XML header section does not exist or is not properly delimited from the binary data.")
-
-        header_end_index: int = header_delimiter_index + len(HEADER_DELIMITER)
-        header_buffer: bytes = self._buffer[header_begin_index:header_end_index].decode()
-
-        header_xml: str = ET.fromstring(header_buffer[:-1])
+        header_xml: str = ET.fromstring(self._header_buffer.decode()[:-1])
 
         self._header = QvdTableHeader()
         self._header.qv_build_no = int(header_xml.find("QvBuildNo").text, 10)
@@ -151,53 +165,59 @@ class QvdFileReader:
 
             self._header.lineage.append(lineage)
 
-        self._header_offset = header_begin_index
-        self._symbol_table_offset = header_end_index
         self._index_table_offset = self._symbol_table_offset + self._header.offset
+
+    def _read_symbol_table_data(self):
+        """
+        Reads the symbol table data of the QVD file into memory.
+        """
+        self._stream.seek(self._symbol_table_offset)
+        self._symbol_table_buffer = self._stream.read(self._header.offset)
 
     def _parse_symbol_table(self):
         """
         Parses the symbol table of the QVD file.
         """
+        self._read_symbol_table_data()
+
         self._symbol_table = [None] * len(self._header.fields)
-        symbol_buffer: bytes = self._buffer[self._symbol_table_offset:self._index_table_offset]
 
         for field_index, field in enumerate(self._header.fields):
             symbols: List[QvdValue] = []
             pointer = field.offset
 
             while pointer < field.offset + field.length:
-                symbol_type = symbol_buffer[pointer]
+                symbol_type = self._symbol_table_buffer[pointer]
                 pointer += 1
 
                 if symbol_type == 1:
-                    byte_data = symbol_buffer[pointer:pointer + 4]
+                    byte_data = self._symbol_table_buffer[pointer:pointer + 4]
                     value = int.from_bytes(byte_data, byteorder="little", signed=True)
                     pointer += 4
                     symbols.append(IntegerValue(value))
                 elif symbol_type == 2:
-                    byte_data = symbol_buffer[pointer:pointer + 8]
+                    byte_data = self._symbol_table_buffer[pointer:pointer + 8]
                     value = struct.unpack("<d", byte_data)[0]
                     pointer += 8
                     symbols.append(DoubleValue(value))
                 elif symbol_type == 4:
                     byte_data = bytearray()
 
-                    while symbol_buffer[pointer] != 0:
-                        byte_data.append(symbol_buffer[pointer])
+                    while self._symbol_table_buffer[pointer] != 0:
+                        byte_data.append(self._symbol_table_buffer[pointer])
                         pointer += 1
 
                     value = byte_data.decode(encoding="utf-8")
                     pointer += 1
                     symbols.append(StringValue(value))
                 elif symbol_type == 5:
-                    int_byte_data = symbol_buffer[pointer:pointer + 4]
+                    int_byte_data = self._symbol_table_buffer[pointer:pointer + 4]
                     int_value = int.from_bytes(int_byte_data, byteorder="little", signed=True)
                     pointer += 4
 
                     string_byte_data = bytearray()
-                    while symbol_buffer[pointer] != 0:
-                        string_byte_data.append(symbol_buffer[pointer])
+                    while self._symbol_table_buffer[pointer] != 0:
+                        string_byte_data.append(self._symbol_table_buffer[pointer])
                         pointer += 1
 
                     string_value = string_byte_data.decode(encoding="utf-8")
@@ -210,13 +230,13 @@ class QvdFileReader:
                     else:
                         symbols.append(DualIntegerValue(int_value, string_value))
                 elif symbol_type == 6:
-                    double_byte_data = symbol_buffer[pointer:pointer + 8]
+                    double_byte_data = self._symbol_table_buffer[pointer:pointer + 8]
                     double_value = struct.unpack("<d", double_byte_data)[0]
                     pointer += 8
 
                     string_byte_data = bytearray()
-                    while symbol_buffer[pointer] != 0:
-                        string_byte_data.append(symbol_buffer[pointer])
+                    while self._symbol_table_buffer[pointer] != 0:
+                        string_byte_data.append(self._symbol_table_buffer[pointer])
                         pointer += 1
 
                     string_value = string_byte_data.decode(encoding="utf-8")
@@ -237,17 +257,25 @@ class QvdFileReader:
 
             self._symbol_table[field_index] = symbols
 
+    def _read_index_table_data(self):
+        """
+        Reads the index table data of the QVD file into memory.
+        """
+        self._stream.seek(self._index_table_offset)
+        self._index_table_buffer = self._stream.read(self._header.length + 1)
+
     def _parse_index_table(self):
         """
         Parses the index table of the QVD file.
         """
+        self._read_index_table_data()
+
         self._index_table = []
-        index_buffer: bytes = self._buffer[self._index_table_offset:self._index_table_offset + self._header.length + 1]
 
         pointer = 0
 
-        while pointer < len(index_buffer):
-            record_buffer = index_buffer[pointer:pointer + self._header.record_byte_size]
+        while pointer < len(self._index_table_buffer):
+            record_buffer = self._index_table_buffer[pointer:pointer + self._header.record_byte_size]
             record_buffer = record_buffer[::-1]
             record_buffer = struct.unpack("<" + "B" * len(record_buffer), record_buffer)
 
@@ -270,6 +298,24 @@ class QvdFileReader:
             self._index_table.append(record_indices)
             pointer += self._header.record_byte_size
 
+    def _read_index_table_chunk_data(self, chunk_offset: int, chunk_size: int) -> bytes:
+        """
+        Reads a chunk of the index table data of the QVD file into memory.
+
+        :param chunk_offset: The offset of the chunk as number of records.
+        :param chunk_size: The size of the chunk as number of records.
+        :return: The chunk of the index table.
+        """
+        if chunk_offset < 0 or chunk_offset >= self._header.no_of_records or chunk_size < 0:
+            raise ValueError("The chunk is out of range.")
+
+        chunk_byte_offset = self._index_table_offset + chunk_offset * self._header.record_byte_size
+        chunk_byte_size = chunk_size * self._header.record_byte_size
+
+        self._stream.seek(chunk_byte_offset)
+
+        return self._stream.read(chunk_byte_size)
+
     def _parse_index_table_chunk(self, chunk_offset: int, chunk_size: int) -> List[List[int]]:
         """
         Parses a chunk of the index table of the QVD file.
@@ -282,13 +328,7 @@ class QvdFileReader:
             raise ValueError("The chunk is out of range.")
 
         chunk: List[List[int]] = []
-        chunk_byte_offset = self._index_table_offset + chunk_offset * self._header.record_byte_size
-        chunk_byte_size = chunk_size * self._header.record_byte_size
-
-        if chunk_byte_offset + chunk_byte_size > len(self._buffer):
-            chunk_byte_size = len(self._buffer) - chunk_byte_offset
-
-        chunk_buffer = self._buffer[chunk_byte_offset:chunk_byte_offset + chunk_byte_size]
+        chunk_buffer = self._read_index_table_chunk_data(chunk_offset, chunk_size)
 
         pointer = 0
 
@@ -338,12 +378,20 @@ class QvdFileReader:
 
         :return: The data table.
         """
-        self._read_data()
+        if isinstance(self._source, str):
+            self._stream = open(self._source, "rb")
+        elif isinstance(self._source, (io.RawIOBase, io.BufferedIOBase)):
+            self._stream = self._source
+        else:
+            raise ValueError("Unsupported source type. Please provide either a file path or a BinaryIO object.")
+
         self._parse_header()
         self._parse_symbol_table()
 
         if self._chunk_size is None:
             self._parse_index_table()
+
+            self._stream.close()
 
             data = [self._decode_record(record) for record in self._index_table]
             columns = [field.field_name for field in self._header.fields]

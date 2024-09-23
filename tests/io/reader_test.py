@@ -64,6 +64,38 @@ def test_read_qvd_file_with_60000_rows():
     assert len(df.data) == 60398
     assert df.head(5).shape == (5, 11)
 
+def test_read_qvd_file_in_chunks():
+    """
+    Tests if a large QVD file can be parsed properly in chunks.
+    """
+    itr = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), '../data/large.qvd'), chunk_size=20000)
+
+    assert itr is not None
+    assert len(itr) == 4
+
+    total_tbl = None
+
+    start = int(time.time() * 1000)
+
+    for tbl in itr:
+        if total_tbl is None:
+            total_tbl = tbl
+        else:
+            total_tbl = total_tbl.concat(tbl)
+
+    end = int(time.time() * 1000)
+
+    assert end - start < 10000
+    assert total_tbl is not None
+    assert total_tbl.shape is not None
+    assert total_tbl.shape[0] == 60398
+    assert total_tbl.shape[1] == 11
+    assert total_tbl.columns is not None
+    assert len(total_tbl.columns) == 11
+    assert total_tbl.data is not None
+    assert len(total_tbl.data) == 60398
+    assert total_tbl.head(5).shape == (5, 11)
+
 def test_read_damaged_qvd_file():
     """
     Tests if reading a damaged QVD file fails as expected.
