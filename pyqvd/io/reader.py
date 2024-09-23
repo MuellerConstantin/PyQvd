@@ -54,6 +54,10 @@ class QvdFileReader:
     """
     Class for reading QVD files into memory. Parses the binary data of a QVD file and converts it into a
     :class:`.QvdTable` object.
+
+    :param source: The source to the QVD file. Either a file path or a BinaryIO object.
+    :param chunk_size: Optional chunk size if the data should be read in chunks. The chunk size is
+        given as number of records.
     """
     def __init__(self, source: Union[str, BinaryIO], chunk_size: int = None):
         """
@@ -376,7 +380,7 @@ class QvdFileReader:
         """
         Reads the QVD file and returns its data as a :class:`.QvdTable` object.
 
-        :return: The data table.
+        :return: The data table of the QVD file or an iterator for reading the data in chunks.
         """
         if isinstance(self._source, str):
             self._stream = open(self._source, "rb")

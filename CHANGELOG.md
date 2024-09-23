@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for customizing value formatting in QVD data tables during writing.
+- Support reading of a QVD file in chunks to reduce memory usage. It's important to note that
+this only affects the reading of the index table. The header and symbol table are still read
+completely into memory.
 
 ## [2.1.1] - 2024-09-04
 

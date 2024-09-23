@@ -49,6 +49,35 @@ following code:
     obj = s3.get_object(Bucket="my-bucket", Key="sample.qvd")
     tbl = QvdTable.from_stream(obj["Body"])
 
+Sometimes your QVD files may be very large and you may not want to load the entire file into
+memory at once or at least you want to track the progress of the reading process. In this case,
+you can use the :func:`pyqvd.qvd.QvdTable.from_qvd` or :func:`pyqvd.qvd.QvdTable.from_stream`
+method with the optional argument ``chunk_size``. This argument specifies the number of rows that
+are read from the QVD file at once. The default value is ``None`` which means that the entire file
+is read at once.
+
+When you specify a chunk size, the result of the :func:`pyqvd.qvd.QvdTable.from_qvd` or
+:func:`pyqvd.qvd.QvdTable.from_stream` method is a iterator that yields :class:`pyqvd.qvd.QvdTable`
+objects. Each :class:`pyqvd.qvd.QvdTable` object represents a chunk of the data in the QVD file.
+
+.. code-block:: python
+
+    import tqdm
+    from pyqvd import QvdTable
+
+    itr = QvdTable.from_qvd("data.qvd", chunk_size=1000)
+
+    with tqdm.tqdm(total=len(itr)) as pbar:
+        for tbl in itr:
+            # Process the chunk
+            pbar.update(1)
+
+.. important::
+
+    Especially for arbitrary ``BinaryIO`` objects, it is important to note that not every stream
+    implementation is seekable. The iteration process requires the ability to seek to any position
+    in the stream. If the stream is not seekable, the iteration process will fail.
+
 *****************
 Data Manipulation
 *****************

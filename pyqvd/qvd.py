@@ -2317,7 +2317,7 @@ class QvdTable:
 
         :param path: The path to the QVD file.
         :param chunk_size: Optional chunk size, as number of records, to read the QVD file in chunks.
-        :return: The data table of the QVD file.
+        :return: The data table of the QVD file or an iterator over the slices of the data table.
         """
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.reader import QvdFileReader
@@ -2325,16 +2325,18 @@ class QvdTable:
         return QvdFileReader(path, chunk_size).read()
 
     @staticmethod
-    def from_stream(source: BinaryIO) -> "QvdTable":
+    def from_stream(source: BinaryIO, chunk_size: int = None) -> Union["QvdTable", Iterator["QvdTable"]]:
         """
         Constructs a new QVD data table from a binary stream.
 
         :param source: The source to the QVD file.
+        :param chunk_size: Optional chunk size, as number of records, to read the QVD file in chunks.
+        :return: The data table of the QVD file or an iterator over the slices of the data table.
         """
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.reader import QvdFileReader
 
-        return QvdFileReader(source).read()
+        return QvdFileReader(source, chunk_size).read()
 
     @staticmethod
     def from_dict(data: Dict[str, any]) -> "QvdTable":
