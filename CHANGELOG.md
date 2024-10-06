@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Custom copy methods for QVD symbol classes to speed up copying of symbol tables.
+
+### Changed
+
+- Improved the performance of converting bit representations to integers during parsing
+QVD index tables. This is accomplished by using strings instead of integer lists for
+bit representations.
+- Improved performance for QVD table concatenation when concatenating them inplace. This
+is achieved by no longer deep copying the data of the table to be appended to. This only
+affects the inplace concatenation.
+
 ## [2.2.0-alpha.1] - 2024-10-05
 
 ### Added

@@ -251,6 +251,18 @@ class IntegerValue(QvdValue):
     def __hash__(self) -> int:
         return hash(self.calculation_value)
 
+    def __copy__(self) -> "IntegerValue":
+        return IntegerValue(self._value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "IntegerValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = IntegerValue(deepcopy(self._value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
+
 class DoubleValue(QvdValue):
     """
     Represents a double value in a QVD file.
@@ -319,6 +331,18 @@ class DoubleValue(QvdValue):
     def __hash__(self) -> int:
         return hash(self.calculation_value)
 
+    def __copy__(self) -> "DoubleValue":
+        return DoubleValue(self._value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "DoubleValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = DoubleValue(deepcopy(self._value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
+
 class StringValue(QvdValue):
     """
     Represents a string value in a QVD file.
@@ -386,6 +410,18 @@ class StringValue(QvdValue):
 
     def __hash__(self) -> int:
         return hash(self.calculation_value)
+
+    def __copy__(self) -> "StringValue":
+        return StringValue(self._value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "StringValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = StringValue(deepcopy(self._value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
 
 class DualIntegerValue(QvdValue):
     """
@@ -462,6 +498,18 @@ class DualIntegerValue(QvdValue):
     def __hash__(self) -> int:
         return hash(self.calculation_value)
 
+    def __copy__(self) -> "DualIntegerValue":
+        return DualIntegerValue(self._int_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "DualIntegerValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = DualIntegerValue(deepcopy(self._int_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
+
 class DualDoubleValue(QvdValue):
     """
     Represents a dual value with a double value and a string value in a QVD file.
@@ -536,6 +584,18 @@ class DualDoubleValue(QvdValue):
 
     def __hash__(self) -> int:
         return hash(self.calculation_value)
+
+    def __copy__(self) -> "DualDoubleValue":
+        return DualDoubleValue(self._double_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "DualDoubleValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = DualDoubleValue(deepcopy(self._double_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
 
 class TimeValue(DualDoubleValue):
     """
@@ -622,6 +682,18 @@ class TimeValue(DualDoubleValue):
 
     def __hash__(self) -> int:
         return hash(self.calculation_value)
+
+    def __copy__(self) -> "TimeValue":
+        return TimeValue(self._double_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "TimeValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = TimeValue(deepcopy(self._double_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
 
     @staticmethod
     def _time_to_serial_number(time: dt.time) -> float:
@@ -753,6 +825,18 @@ class DateValue(DualIntegerValue):
     def __hash__(self) -> int:
         return hash(self.calculation_value)
 
+    def __copy__(self) -> "DateValue":
+        return DateValue(self._int_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "DateValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = DateValue(deepcopy(self._int_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
+
     @staticmethod
     def _date_to_serial_number(date: dt.date) -> int:
         # pylint: disable-next=invalid-name
@@ -883,6 +967,18 @@ class TimestampValue(DualDoubleValue):
     def __hash__(self) -> int:
         return hash(self.calculation_value)
 
+    def __copy__(self) -> "TimestampValue":
+        return TimestampValue(self._double_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "TimestampValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = TimestampValue(deepcopy(self._double_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
+
     @staticmethod
     def _timestamp_to_serial_number(timestamp: dt.datetime) -> float:
         # pylint: disable-next=invalid-name
@@ -1012,6 +1108,18 @@ class IntervalValue(DualDoubleValue):
 
     def __hash__(self) -> int:
         return hash(self.calculation_value)
+
+    def __copy__(self) -> "IntervalValue":
+        return IntervalValue(self._double_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "IntervalValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = IntervalValue(deepcopy(self._double_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
 
     @staticmethod
     def _interval_to_serial_number(interval: dt.timedelta) -> float:
@@ -1154,6 +1262,18 @@ class MoneyValue(DualDoubleValue):
 
     def __hash__(self) -> int:
         return hash(self.calculation_value)
+
+    def __copy__(self) -> "MoneyValue":
+        return MoneyValue(self._double_value, self._string_value)
+
+    def __deepcopy__(self, memo: Dict[int, object]) -> "MoneyValue":
+        if id(self) in memo:
+            return memo[id(self)]
+
+        new_copy = MoneyValue(deepcopy(self._double_value, memo), deepcopy(self._string_value, memo))
+        memo[id(self)] = new_copy
+
+        return new_copy
 
     @staticmethod
     def from_money(money: Decimal) -> "MoneyValue":
@@ -1863,8 +1983,17 @@ class QvdTable:
         row-wise. If a column is missing in a data table, the values for its rows are filled with None
         and the column is added to the concatenated data table.
 
+        .. important::
+
+            Internally, this method uses the `copy.deepcopy` function to create a deep copy of the
+            current data table and the data tables to concatenate. This can be very slow for large
+            data tables with many concatenations. For better performance, consider using the `inplace`
+            parameter to modify the current data table instead of returning a new data table. This
+            will avoid the overhead of creating deep copies of the current data table.
+
         :param tables: The data tables to concatenate.
-        :param inplace: Instead of returning a new data table, modify the current data table.
+        :param inplace: Instead of returning a new data table, modify the current data table. This may
+                        be faster for large data tables with many concatenations.
         :return: The concatenated data table.
         """
         if len(args) == 0:
@@ -1873,15 +2002,20 @@ class QvdTable:
         new_columns = deepcopy(self._columns)
         new_columns.extend(column for table in args for column in deepcopy(table.columns))
         new_columns = list(dict.fromkeys(new_columns).keys())
-        new_data = []
 
-        for row in self._data:
-            new_row = [None] * len(new_columns)
+        # Because 'dict.fromkeys(...).keys()' is guaranteed to preserve the order of the keys,
+        # we know for sure that the first columns are the ones from the current table. So we can
+        # just add the data from the current table and add possible new columns from the other
+        # tables to each current table's record.
+        #
+        # See: https://docs.python.org/3.7/whatsnew/3.7.html
 
-            for index, column in enumerate(self._columns):
-                new_row[new_columns.index(column)] = deepcopy(row[index])
+        new_data = self._data if inplace else deepcopy(self._data)
 
-            new_data.append(new_row)
+        # Checks whether the tables to be appended have introduced new columns
+        if len(new_columns) > len(self._columns):
+            for row in new_data:
+                row.extend([None] * (len(new_columns) - len(row)))
 
         for table in args:
             for row in table.data:
