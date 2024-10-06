@@ -285,7 +285,6 @@ class QvdFileReader:
 
             mask = "".join(format(byte, "08b") for byte in record_buffer)
             mask = mask[::-1]
-            mask = [int(bit) for bit in mask]
 
             record_indices = []
 
@@ -293,8 +292,7 @@ class QvdFileReader:
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = QvdFileReader._convert_bits_to_int32(
-                        mask[field.bit_offset:field.bit_offset + field.bit_width])
+                    symbol_index = int(mask[field.bit_offset:field.bit_offset + field.bit_width][::-1], 2)
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
@@ -343,7 +341,6 @@ class QvdFileReader:
 
             mask = "".join(format(byte, "08b") for byte in record_buffer)
             mask = mask[::-1]
-            mask = [int(bit) for bit in mask]
 
             record_indices = []
 
@@ -351,8 +348,7 @@ class QvdFileReader:
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = QvdFileReader._convert_bits_to_int32(
-                        mask[field.bit_offset:field.bit_offset + field.bit_width])
+                    symbol_index = int(mask[field.bit_offset:field.bit_offset + field.bit_width][::-1], 2)
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
@@ -403,16 +399,3 @@ class QvdFileReader:
             return QvdTable(data, columns)
         else:
             return QvdFileReaderIterator(self, self._chunk_size)
-
-    @staticmethod
-    def _convert_bits_to_int32(bits: List[int]) -> int:
-        """
-        Converts a list of bits to an integer.
-
-        :param bits: The list of bits.
-        :return: The integer value.
-        """
-        if len(bits) == 0:
-            return 0
-
-        return sum(bit * (2 ** index) for index, bit in enumerate(bits))
