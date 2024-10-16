@@ -1848,7 +1848,7 @@ class QvdTable:
             8
         """
         if axis == "rows":
-            new_data = deepcopy(self._data)
+            new_data = self._data if inplace else deepcopy(self._data)
 
             if isinstance(key, int):
                 if key < 0 or key >= len(self._data):
@@ -1871,8 +1871,8 @@ class QvdTable:
             else:
                 return QvdTable(new_data, deepcopy(self._columns))
         elif axis == "columns":
-            new_data = deepcopy(self._data)
-            new_columns = deepcopy(self._columns)
+            new_data = self._data if inplace else deepcopy(self._data)
+            new_columns = self._columns if inplace else deepcopy(self._columns)
 
             if isinstance(key, str):
                 if key not in new_columns:
@@ -1921,7 +1921,7 @@ class QvdTable:
             raise KeyError(f"Column '{column}' not found")
 
         column_index = self._columns.index(column)
-        new_data = deepcopy(self._data)
+        new_data = self._data if inplace else deepcopy(self._data)
         new_data = [row for row in new_data if condition(row[column_index])]
 
         if inplace:
@@ -1949,8 +1949,9 @@ class QvdTable:
             raise KeyError(f"Column '{column}' not found")
 
         column_index = self._columns.index(column)
-        new_data = deepcopy([row for row in self._data if row[column_index] is not None])
-        na_data = deepcopy([row for row in self._data if row[column_index] is None])
+        new_data = self._data if inplace else deepcopy(self._data)
+        new_data = [row for row in new_data if row[column_index] is not None]
+        na_data = [row for row in new_data if row[column_index] is None]
 
         def _default_comparator(a: QvdValue, b: QvdValue) -> int:
             if a < b:

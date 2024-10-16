@@ -19,6 +19,8 @@ bit representations.
 - Improved performance for QVD table concatenation when concatenating them inplace. This
 is achieved by no longer deep copying the data of the table to be appended to. This only
 affects the inplace concatenation.
+- Improved inplace DataFrame transformations by avoiding unnecessary copying of the data
+when transforming the DataFrame.
 
 ## [2.2.0-alpha.1] - 2024-10-05
 
