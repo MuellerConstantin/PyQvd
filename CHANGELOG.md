@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.0-beta.1] - 2024-10-22
+## [2.2.0] - 2024-10-26
 
 ### Added
 
 - Custom copy methods for QVD symbol classes to speed up copying of symbol tables.
+- Added support for customizing value formatting in QVD data tables during writing.
+- Support reading of a QVD file in chunks to reduce memory usage. It's important to note that
+this only affects the reading of the index table. The header and symbol table are still read
+completely into memory.
 
 ### Changed
 
@@ -21,15 +25,6 @@ is achieved by no longer deep copying the data of the table to be appended to. T
 affects the inplace concatenation.
 - Improved inplace DataFrame transformations by avoiding unnecessary copying of the data
 when transforming the DataFrame.
-
-## [2.2.0-alpha.1] - 2024-10-05
-
-### Added
-
-- Added support for customizing value formatting in QVD data tables during writing.
-- Support reading of a QVD file in chunks to reduce memory usage. It's important to note that
-this only affects the reading of the index table. The header and symbol table are still read
-completely into memory.
 
 ## [2.1.1] - 2024-09-04
 
