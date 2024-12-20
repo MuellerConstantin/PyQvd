@@ -70,6 +70,7 @@ class QvdTableHeader:
     compression: str = ""
     record_byte_size: int = 0
     no_of_records: int = 0
+    no_of_fields: int = 0
     offset: int = 0
     length: int = 0
     comment: str = ""
@@ -2500,7 +2501,7 @@ class QvdTable:
         return QvdTable(table_data, data["columns"])
 
     @staticmethod
-    def from_pandas(df: "pd.DataFrame") -> "QvdTable":
+    def from_pandas(df: "pd.DataFrame", vectorized=False) -> "QvdTable":
         """
         Constructs a new QVD data table from a pandas data frame.
 
@@ -2516,11 +2517,19 @@ class QvdTable:
         try:
             # pylint: disable=import-outside-toplevel
             import pandas as pd
-            from pandas.api.types import is_integer_dtype, is_float_dtype, is_datetime64_any_dtype
+            from pandas.api.types import is_integer_dtype, is_float_dtype, is_datetime64_any_dtype, is_timedelta64_dtype
+            import numpy as np
         except ImportError as exc:
             raise ImportError(
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
+
+        def is_int32(value: int) -> bool:
+            try:
+                np.int32(value)
+                return True
+            except OverflowError:
+                return False
 
         def _get_symbol_from_pandas_value(value: any) -> QvdValue:
             if value is None or pd.isna(value):
@@ -2529,7 +2538,10 @@ class QvdTable:
             value_type = type(value)
 
             if is_integer_dtype(value_type):
-                return IntegerValue(int(value))
+                if is_int32(value):
+                    return IntegerValue(int(value))
+                else:
+                    return DualDoubleValue(float(value), str(value))
             if is_float_dtype(value_type):
                 return DoubleValue(float(value))
             if isinstance(value, pd.Timestamp):
@@ -2541,7 +2553,29 @@ class QvdTable:
 
             return QvdTable._get_symbol_from_value(value)
 
-        data = [[_get_symbol_from_pandas_value(value) for value in row] for row in df.values]
+        def _get_symbol_from_pandas_value_(column):
+
+            value_type = column.dtype
+
+            if is_integer_dtype(value_type):
+                val_max = column.abs().max()
+                if is_int32(val_max):
+                    return column.apply(lambda x: IntegerValue(int(x)) if not pd.isna(x) else None)
+                else:
+                    return column.apply(lambda x: DualDoubleValue(float(x), str(x)) if not pd.isna(x) else None)
+            if is_float_dtype(value_type):
+                return column.apply(lambda x: DoubleValue(float(x)) if not pd.isna(x) else None)
+            if is_datetime64_any_dtype(value_type):
+                return column.apply(lambda x: TimestampValue.from_timestamp(x.to_pydatetime()) if not pd.isna(x) else None)
+            if is_timedelta64_dtype(value_type):
+                return column.apply(lambda x: IntervalValue.from_interval(x.to_pytimedelta()) if not pd.isna(x) else None)
+
+            return column.apply(lambda x: QvdTable._get_symbol_from_value(x) if not pd.isna(x) else None)
+
+        if not vectorized:
+            data = [[_get_symbol_from_pandas_value(value) for value in row] for row in df.values]
+        else:
+            data = df.apply(_get_symbol_from_pandas_value_).values.tolist()
         return QvdTable(data, df.columns.tolist())
 
     @staticmethod

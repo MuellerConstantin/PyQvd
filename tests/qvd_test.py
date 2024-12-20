@@ -286,6 +286,95 @@ def test_construct_qvd_table_from_pandas_df():
     assert tbl.to_pandas().equals(raw_df)
     assert all(isinstance(value, QvdValue) for row in tbl.data for value in row)
 
+def test_construct_qvd_table_from_pandas_df_int64():
+    """
+    Tests if a QVD table, constructed from a pandas DataFrame containing 64-bit
+    integers, can be written to QVD file.
+    """
+    from io import BytesIO
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    largest_int32 = 2147483647
+
+    raw_df = pd.DataFrame({
+        "Key": [largest_int32 + 1, largest_int32 + 2, 3, 4, 5],
+        "Value": ["A", "B", "C", "D", "E"],
+        "Timestamp": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                      dt.datetime(2021, 1, 2, 9, 0, 0),
+                      dt.datetime(2021, 1, 3, 9, 0, 0),
+                      dt.datetime(2021, 1, 4, 9, 0, 0),
+                      dt.datetime(2021, 1, 5, 9, 0, 0)]
+    })
+
+    QvdTable.from_pandas(raw_df).to_stream(BytesIO())
+
+def test_construct_qvd_table_from_pandas_df_vectorization():
+    """
+    Tests if a QVD table, constructed from a pandas DataFrame using vectorization
+    is the same as when not using vectorization.
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+        from pandas.testing import assert_frame_equal
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    raw_df = pd.DataFrame({
+        "Key": [1, 2, 3, 4, 5],
+        "Value": ["A", "B", "C", "D", "E"],
+        "Timestamp": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                      dt.datetime(2021, 1, 2, 9, 0, 0),
+                      dt.datetime(2021, 1, 3, 9, 0, 0),
+                      dt.datetime(2021, 1, 4, 9, 0, 0),
+                      dt.datetime(2021, 1, 5, 9, 0, 0)]
+    })
+
+    tbl = QvdTable.from_pandas(raw_df)
+    tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
+
+    assert tbl.__repr__() == tbl2.__repr__()
+    assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
+
+def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
+    """
+    Tests if a QVD table, constructed using vectorization from a pandas DataFrame
+    containing Nones, is the same as when not using vectorization.
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        import pandas as pd
+        from pandas.testing import assert_frame_equal
+    except ImportError as exc:
+        raise ImportError(
+            "Pandas is not installed. Please install it using `pip install pandas`."
+        ) from exc
+
+    # note, np.nans would be same as Nones
+    raw_df = pd.DataFrame({
+        "Key": [1., 2., None, None, 5.],
+        "Value": ["A", "B", "C", "D", "E"],
+        "Timestamp": [dt.datetime(2021, 1, 1, 9, 0, 0),
+                      pd.NaT,
+                      dt.datetime(2021, 1, 3, 9, 0, 0),
+                      pd.NaT,
+                      dt.datetime(2021, 1, 5, 9, 0, 0)]
+    })
+
+    tbl = QvdTable.from_pandas(raw_df)
+    tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
+
+    assert tbl.__repr__() == tbl2.__repr__()
+    assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
+
 def test_construct_qvd_table_from_pandas_df_with_datetimes():
     """
     Tests if a QVD table, constructed from a pandas DataFrame with datetimes, can be read properly.
