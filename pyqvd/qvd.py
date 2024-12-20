@@ -2538,7 +2538,7 @@ class QvdTable:
             value_type = type(value)
 
             if is_integer_dtype(value_type):
-                if is_int32(value):
+                if is_int32(int(value)):
                     return IntegerValue(int(value))
                 else:
                     return DualDoubleValue(float(value), str(value))
@@ -2558,7 +2558,7 @@ class QvdTable:
             value_type = row.dtype
 
             if is_integer_dtype(value_type):
-                val_max = row.abs().max()
+                val_max = int(row.abs().max())
                 if is_int32(val_max):
                     return row.apply(lambda x: IntegerValue(int(x)) if not pd.isna(x) else None)
                 else:

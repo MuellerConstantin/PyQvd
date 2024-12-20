@@ -319,6 +319,9 @@ def test_construct_qvd_table_from_pandas_df_int64():
     assert tbl[1][0].calculation_value == largest_int32 + 2
     assert tbl[1][0].display_value == str(largest_int32 + 2)
 
+    # test previous edge case of native np.int64s
+    raw_df = pd.DataFrame([[largest_int32 + 1]], columns=['a'])
+    QvdTable.from_pandas(raw_df).to_stream(BytesIO())
 
 def test_construct_qvd_table_from_pandas_df_vectorization():
     """
