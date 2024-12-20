@@ -68,19 +68,20 @@ class QvdFileWriter:
         self._header.compression = ""
         self._header.comment = ""
         self._header.lineage = []
-        self._header.no_of_records = len(self._table.data)
+        self._header.no_of_records = len(self._table._data)
+        self._header.no_of_fields = len(self._table._columns)
 
     def _build_symbol_table(self):
         """
         Builds the symbol table of the QVD file.
         """
-        self._symbol_table = [None] * len(self._table.columns)
+        self._symbol_table = [None] * self._header.no_of_fields
         self._symbol_table_buffer = b""
-        self._symbol_table_nullability = [False] * len(self._table.columns)
+        self._symbol_table_nullability = [False] * self._header.no_of_fields
 
-        for column_index, _ in enumerate(self._table.columns):
+        for column_index, _ in enumerate(self._table._columns):
             # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
-            unique_values = list(dict.fromkeys([row[column_index] for row in self._table.data]).keys())
+            unique_values = list(dict.fromkeys([row[column_index] for row in self._table._data]).keys())
 
             symbols: Dict[QvdValue, int] = {}
             contains_none = False
@@ -102,7 +103,7 @@ class QvdFileWriter:
 
             # Update the field header with the new symbol table information
             field_header = QvdFieldHeader()
-            field_header.field_name = self._table.columns[column_index]
+            field_header.field_name = self._table._columns[column_index]
             field_header.no_of_symbols = len(symbols)
             field_header.offset = len(self._symbol_table_buffer) - len(current_symbols_buffer)
             field_header.length = len(current_symbols_buffer)
@@ -161,7 +162,7 @@ class QvdFileWriter:
         """
         Builds the index table of the QVD file.
         """
-        self._index_table = [None] * len(self._table.data)
+        self._index_table = [None] * self._header.no_of_records
         self._index_table_buffer = b""
 
         # Each row in the index table is represented by one or more bytes, the number of bytes used to represent a
@@ -206,10 +207,10 @@ class QvdFileWriter:
         # called index table, basically a byte buffer. The information about the bit width and bit offset of each column
         # is stored in the header.
 
-        for record_index, record in enumerate(self._table.data):
-            record_indices = [None] * len(self._table.columns)
+        for record_index, record in enumerate(self._table._data):
+            record_indices = [None] * self._header.no_of_fields
 
-            for column_index, _ in enumerate(self._table.columns):
+            for column_index, _ in enumerate(self._table._columns):
                 # Convert the raw values to indices referring to the symbol table
                 value = record[column_index]
                 field_contains_none = self._symbol_table_nullability[column_index]
@@ -231,7 +232,7 @@ class QvdFileWriter:
             self._index_table[record_index] = record_indices
 
         # Normalize the bit representation of the indices by padding with zeros
-        for column_index, _ in enumerate(self._table.columns):
+        for column_index, _ in enumerate(self._table._columns):
             # Update the field header with the new bit metadata
             field_contains_none = self._symbol_table_nullability[column_index]
             # Bit offset is the sum of the bit widths of all previous columns
@@ -259,7 +260,7 @@ class QvdFileWriter:
 
             self._index_table_buffer += record_byte_representation
 
-        self._header.record_byte_size = len(self._index_table_buffer) // len(self._table.data)
+        self._header.record_byte_size = len(self._index_table_buffer) // self._header.no_of_records
         self._header.length = len(self._index_table_buffer)
         self._header.offset = len(self._symbol_table_buffer)
 
@@ -355,7 +356,7 @@ class QvdFileWriter:
         record_byte_size_element.text = str(self._header.record_byte_size)
 
         no_of_records_element = ET.SubElement(header_root, "NoOfRecords")
-        no_of_records_element.text = str(len(self._table.data))
+        no_of_records_element.text = str(self._header.no_of_records)
 
         offset_element = ET.SubElement(header_root, "Offset")
         offset_element.text = str(self._header.offset)
