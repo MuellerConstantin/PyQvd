@@ -289,7 +289,7 @@ def test_construct_qvd_table_from_pandas_df():
 def test_construct_qvd_table_from_pandas_df_int64():
     """
     Tests if a QVD table, constructed from a pandas DataFrame containing 64-bit
-    integers, can be written to QVD file.
+    integers, contains DualDoubleValues and can be written to QVD file.
     """
     from io import BytesIO
     try:
@@ -312,7 +312,13 @@ def test_construct_qvd_table_from_pandas_df_int64():
                       dt.datetime(2021, 1, 5, 9, 0, 0)]
     })
 
-    QvdTable.from_pandas(raw_df).to_stream(BytesIO())
+    tbl = QvdTable.from_pandas(raw_df)
+
+    tbl.to_stream(BytesIO())
+    assert isinstance(tbl[1][0], DualDoubleValue)
+    assert tbl[1][0].calculation_value == largest_int32 + 2
+    assert tbl[1][0].display_value == str(largest_int32 + 2)
+
 
 def test_construct_qvd_table_from_pandas_df_vectorization():
     """
@@ -372,6 +378,7 @@ def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
     tbl = QvdTable.from_pandas(raw_df)
     tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
 
+    assert tbl2[2][0] is None
     assert tbl.__repr__() == tbl2.__repr__()
     assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
 

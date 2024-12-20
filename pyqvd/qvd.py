@@ -2553,24 +2553,24 @@ class QvdTable:
 
             return QvdTable._get_symbol_from_value(value)
 
-        def _get_symbol_from_pandas_value_(column):
+        def _get_symbol_from_pandas_value_(row):
 
-            value_type = column.dtype
+            value_type = row.dtype
 
             if is_integer_dtype(value_type):
-                val_max = column.abs().max()
+                val_max = row.abs().max()
                 if is_int32(val_max):
-                    return column.apply(lambda x: IntegerValue(int(x)) if not pd.isna(x) else None)
+                    return row.apply(lambda x: IntegerValue(int(x)) if not pd.isna(x) else None)
                 else:
-                    return column.apply(lambda x: DualDoubleValue(float(x), str(x)) if not pd.isna(x) else None)
+                    return row.apply(lambda x: DualDoubleValue(float(x), str(x)) if not pd.isna(x) else None)
             if is_float_dtype(value_type):
-                return column.apply(lambda x: DoubleValue(float(x)) if not pd.isna(x) else None)
+                return row.apply(lambda x: DoubleValue(float(x)) if not pd.isna(x) else None)
             if is_datetime64_any_dtype(value_type):
-                return column.apply(lambda x: TimestampValue.from_timestamp(x.to_pydatetime()) if not pd.isna(x) else None)
+                return row.apply(lambda x: TimestampValue.from_timestamp(x.to_pydatetime()) if not pd.isna(x) else None)
             if is_timedelta64_dtype(value_type):
-                return column.apply(lambda x: IntervalValue.from_interval(x.to_pytimedelta()) if not pd.isna(x) else None)
+                return row.apply(lambda x: IntervalValue.from_interval(x.to_pytimedelta()) if not pd.isna(x) else None)
 
-            return column.apply(lambda x: QvdTable._get_symbol_from_value(x) if not pd.isna(x) else None)
+            return row.apply(lambda x: QvdTable._get_symbol_from_value(x) if not pd.isna(x) else None)
 
         if not vectorized:
             data = [[_get_symbol_from_pandas_value(value) for value in row] for row in df.values]
