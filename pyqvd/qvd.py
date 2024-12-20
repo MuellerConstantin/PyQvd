@@ -2501,7 +2501,7 @@ class QvdTable:
         return QvdTable(table_data, data["columns"])
 
     @staticmethod
-    def from_pandas(df: "pd.DataFrame", vectorized=False) -> "QvdTable":
+    def from_pandas(df: "pd.DataFrame", vectorized=True) -> "QvdTable":
         """
         Constructs a new QVD data table from a pandas data frame.
 

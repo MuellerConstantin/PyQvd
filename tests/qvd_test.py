@@ -347,7 +347,7 @@ def test_construct_qvd_table_from_pandas_df_vectorization():
                       dt.datetime(2021, 1, 5, 9, 0, 0)]
     })
 
-    tbl = QvdTable.from_pandas(raw_df)
+    tbl = QvdTable.from_pandas(raw_df, vectorized=True)
     tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
 
     assert tbl.__repr__() == tbl2.__repr__()
@@ -378,7 +378,7 @@ def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
                       dt.datetime(2021, 1, 5, 9, 0, 0)]
     })
 
-    tbl = QvdTable.from_pandas(raw_df)
+    tbl = QvdTable.from_pandas(raw_df, vectorized=True)
     tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
 
     assert tbl2[2][0] is None
