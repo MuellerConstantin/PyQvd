@@ -381,7 +381,8 @@ def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
     tbl = QvdTable.from_pandas(raw_df, vectorized=True)
     tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
 
-    assert tbl2[2][0] is None
+    assert tbl[2][0] is None
+    assert tbl[1][2] is None
     assert tbl.__repr__() == tbl2.__repr__()
     assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
 
