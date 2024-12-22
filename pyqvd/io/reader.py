@@ -156,6 +156,7 @@ class QvdFileReader:
         self._header.compression = header_xml.find("Compression").text
         self._header.record_byte_size = int(header_xml.find("RecordByteSize").text, 10)
         self._header.no_of_records = int(header_xml.find("NoOfRecords").text, 10)
+        self._header.no_of_fields = len(self._header.fields)
         self._header.offset = int(header_xml.find("Offset").text, 10)
         self._header.length = int(header_xml.find("Length").text, 10)
         self._header.comment = header_xml.find("Comment").text
@@ -184,7 +185,7 @@ class QvdFileReader:
         """
         self._read_symbol_table_data()
 
-        self._symbol_table = [None] * len(self._header.fields)
+        self._symbol_table = [None] * self._header.no_of_fields
 
         for field_index, field in enumerate(self._header.fields):
             symbols: List[QvdValue] = []
