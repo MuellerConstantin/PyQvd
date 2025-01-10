@@ -2510,6 +2510,7 @@ class QvdTable:
             This method requires the pandas library to be installed. See `pandas`_ for more information.
 
         :param df: The pandas data frame.
+        :param vectorized: Optional flag to enable vectorized conversion.
         :return: The QVD data table.
 
         .. _pandas: https://pandas.pydata.org/
