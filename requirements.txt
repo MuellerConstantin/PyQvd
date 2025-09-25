@@ -3,3 +3,4 @@ twine
 pytest
 pylint
 pandas
+tabulate

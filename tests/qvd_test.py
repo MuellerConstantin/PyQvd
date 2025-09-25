@@ -57,6 +57,15 @@ def test_construct_qvd_string_value():
     assert string > "A"
     assert string < "C"
 
+def test_construct_qvd_time_value_from_serial_number_to_time_value():
+    """
+    Tests if a QVD time value, constructed from a serial number, can be constructed
+    """
+    for raw_serial_number in [0.75, 45916.75]:
+        time = TimeValue.from_serial_number(raw_serial_number)
+        assert time is not None
+        assert time.display_value == "18:00:00"
+
 def test_construct_qvd_dual_integer_value():
     """
     Tests if a QVD dual integer value can be constructed properly.

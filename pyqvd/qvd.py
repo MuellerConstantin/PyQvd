@@ -706,12 +706,13 @@ class TimeValue(DualDoubleValue):
 
     @staticmethod
     def _serial_number_to_time(serial_number: float) -> dt.time:
-        # pylint: disable-next=invalid-name
-        seconds = int(serial_number * 24 * 60 * 60)
-        hours, seconds = divmod(seconds, 60 * 60)
-        minutes, seconds = divmod(seconds, 60)
-
-        return dt.time(hours, minutes, seconds)
+        frac = serial_number % 1.0  # time-of-day only
+        total_us = round(frac * 86_400_000_000)  # microseconds in a day
+        total_us %= 86_400_000_000  # wrap 24:00 → 00:00
+        hours, rem = divmod(total_us, 3_600_000_000)
+        minutes, rem = divmod(rem, 60_000_000)
+        seconds, micros = divmod(rem, 1_000_000)
+        return dt.time(int(hours), int(minutes), int(seconds), int(micros))
 
     @staticmethod
     def from_time(time: dt.time) -> "TimeValue":
