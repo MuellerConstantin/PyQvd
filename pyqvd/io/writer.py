@@ -76,8 +76,9 @@ class QvdFileWriter:
         Builds the symbol table of the QVD file.
         """
         self._symbol_table = [None] * self._header.no_of_fields
-        self._symbol_table_buffer = b""
+        symbol_buffers = []
         self._symbol_table_nullability = [False] * self._header.no_of_fields
+        total_offset = 0
 
         for column_index, _ in enumerate(self._table._columns):
             # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
@@ -97,7 +98,7 @@ class QvdFileWriter:
             # Extend the symbol table with the new symbols
             current_symbols_buffer = b"".join([self._get_symbol_byte_representation(symbol)
                                                for symbol in symbols])
-            self._symbol_table_buffer += current_symbols_buffer
+            symbol_buffers.append(current_symbols_buffer)
             self._symbol_table[column_index] = symbols
             self._symbol_table_nullability[column_index] = contains_none
 
@@ -105,8 +106,9 @@ class QvdFileWriter:
             field_header = QvdFieldHeader()
             field_header.field_name = self._table._columns[column_index]
             field_header.no_of_symbols = len(symbols)
-            field_header.offset = len(self._symbol_table_buffer) - len(current_symbols_buffer)
+            field_header.offset = total_offset
             field_header.length = len(current_symbols_buffer)
+            total_offset += len(current_symbols_buffer)
             field_header.comment = ""
             field_header.tags = []
 
@@ -158,12 +160,14 @@ class QvdFileWriter:
 
             self._header.fields.append(field_header)
 
+        self._symbol_table_buffer = b"".join(symbol_buffers)
+
     def _build_index_table(self):
         """
         Builds the index table of the QVD file.
         """
         self._index_table = [None] * self._header.no_of_records
-        self._index_table_buffer = b""
+        index_buffers = []
 
         # Each row in the index table is represented by one or more bytes, the number of bytes used to represent a
         # row is the so called record byte size. These bytes are used to store the indices of the symbols in the symbol
@@ -258,8 +262,9 @@ class QvdFileWriter:
             record_byte_representation = struct.pack("<" + "B" * len(byte_values), *byte_values)
             record_byte_representation = record_byte_representation[::-1]
 
-            self._index_table_buffer += record_byte_representation
+            index_buffers.append(record_byte_representation)
 
+        self._index_table_buffer = b"".join(index_buffers)
         self._header.record_byte_size = len(self._index_table_buffer) // self._header.no_of_records
         self._header.length = len(self._index_table_buffer)
         self._header.offset = len(self._symbol_table_buffer)
