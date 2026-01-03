@@ -85,7 +85,7 @@ class QvdFileReader:
         # pylint: disable-next=invalid-name
         HEADER_DELIMITER = "\r\n\0"
 
-        buffer = b""
+        blocks = []
 
         self._stream.seek(0)
 
@@ -95,19 +95,23 @@ class QvdFileReader:
             if not block:
                 break
 
-            buffer += block
+            blocks.append(block)
 
+            # Check if we've found the delimiter
+            buffer = b"".join(blocks)
             pos = buffer.find(str.encode(HEADER_DELIMITER))
 
             if pos != -1:
                 buffer = buffer[:pos + len(HEADER_DELIMITER)]
-                break
+                self._header_buffer = buffer
+                self._symbol_table_offset = len(buffer)
+                return
 
-        if not buffer or buffer.find(str.encode(HEADER_DELIMITER)) == -1:
+        if not blocks:
             raise ValueError("The XML header section does not exist or is not properly delimited from the binary data.")
 
-        self._header_buffer = buffer
-        self._symbol_table_offset = len(buffer)
+        # If we get here, delimiter not found
+        raise ValueError("The XML header section does not exist or is not properly delimited from the binary data.")
 
     def _parse_header(self):
         """
@@ -262,6 +266,28 @@ class QvdFileReader:
 
             self._symbol_table[field_index] = symbols
 
+    def _extract_bits(self, byte_buffer: bytes, bit_offset: int, bit_width: int) -> int:
+        """
+        Extracts bits from a byte buffer using bitwise operations.
+        Much faster than string conversion.
+
+        :param byte_buffer: The buffer containing the packed bits
+        :param bit_offset: Starting bit position
+        :param bit_width: Number of bits to extract
+        :return: The extracted value as an integer
+        """
+        if bit_width == 0:
+            return 0
+
+        # Convert bytes to integer
+        value = int.from_bytes(byte_buffer, byteorder='little')
+
+        # Extract the bits using bitwise operations
+        mask = (1 << bit_width) - 1  # Create mask of bit_width 1s
+        result = (value >> bit_offset) & mask
+
+        return result
+
     def _read_index_table_data(self):
         """
         Reads the index table data of the QVD file into memory.
@@ -281,11 +307,6 @@ class QvdFileReader:
 
         while pointer < len(self._index_table_buffer):
             record_buffer = self._index_table_buffer[pointer:pointer + self._header.record_byte_size]
-            record_buffer = record_buffer[::-1]
-            record_buffer = struct.unpack("<" + "B" * len(record_buffer), record_buffer)
-
-            mask = "".join(format(byte, "08b") for byte in record_buffer)
-            mask = mask[::-1]
 
             record_indices = []
 
@@ -293,7 +314,7 @@ class QvdFileReader:
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = int(mask[field.bit_offset:field.bit_offset + field.bit_width][::-1], 2)
+                    symbol_index = self._extract_bits(record_buffer, field.bit_offset, field.bit_width)
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
@@ -337,11 +358,6 @@ class QvdFileReader:
 
         while pointer < len(chunk_buffer):
             record_buffer = chunk_buffer[pointer:pointer + self._header.record_byte_size]
-            record_buffer = record_buffer[::-1]
-            record_buffer = struct.unpack("<" + "B" * len(record_buffer), record_buffer)
-
-            mask = "".join(format(byte, "08b") for byte in record_buffer)
-            mask = mask[::-1]
 
             record_indices = []
 
@@ -349,7 +365,7 @@ class QvdFileReader:
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = int(mask[field.bit_offset:field.bit_offset + field.bit_width][::-1], 2)
+                    symbol_index = self._extract_bits(record_buffer, field.bit_offset, field.bit_width)
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
