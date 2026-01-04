@@ -6,6 +6,16 @@ The _PyQvd_ library provides a simple API for reading/writing Qlik View Data (QV
 Using this library, it is possible to parse the binary QVD file format and convert it to a Python object
 structure or vice versa.
 
+> [!CAUTION]
+> **End of Life (EOL)**  
+> This version is no longer maintained.
+>
+> - No bug fixes
+> - No security updates
+> - No new releases
+>
+> Please upgrade to major version **v2**, which is actively maintained.
+
 ---
 
 - [Install](#install)
