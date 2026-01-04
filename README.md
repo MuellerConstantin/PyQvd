@@ -45,7 +45,7 @@ the file's content, numerous methods and properties are available to work with t
 
 ## License
 
-Copyright (c) 2024 Constantin Müller
+Copyright (c) 2024 Constantin Müller and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
