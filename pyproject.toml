@@ -36,6 +36,10 @@ pandas = ["pandas"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not benchmark'"
+markers = [
+    "benchmark: performance benchmarks (not run by default)"
+]
 
 [tool.pylint.main]
 py-version = "3.8"

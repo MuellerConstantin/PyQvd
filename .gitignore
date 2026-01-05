@@ -287,3 +287,14 @@ pyrightconfig.json
 # Documentation
 docs/_build/
 docs/source/generated
+
+# Benchmarks
+.benchmarks/
+
+benchmarks/*.json
+benchmarks/*.csv
+benchmarks/*.txt
+
+benchmark*.json
+benchmark*.csv
+benchmark*.txt
