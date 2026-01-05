@@ -1,21 +1,20 @@
 [build-system]
-requires = ["setuptools<68", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.7.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
-name = "PyQvd"
+[tool.poetry]
+name = "pyqvd"
 version = "2.2.2"
 description = "Utility library for reading/writing Qlik View Data (QVD) files in Python."
-readme = {file = "README.md", content-type = "text/markdown"}
-license = { file = "LICENSE.md" }
-authors = [
-    {name = "Constantin Müller", email = "info@mueller-constantin.de"},
-]
+readme = "README.md"
+license = "MIT"
+authors = ["Constantin Müller <info@mueller-constantin.de>"]
 keywords = ["qlik", "qvd", "qlik sense", "qlik view", "pandas"]
-requires-python = ">=3.8"
-dependencies = [
-    "tabulate"
-]
+
+homepage = "https://github.com/MuellerConstantin/PyQvd"
+repository = "https://github.com/MuellerConstantin/PyQvd"
+documentation = "https://pyqvd.readthedocs.io"
+
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -24,15 +23,18 @@ classifiers = [
     "Programming Language :: Python :: 3.8"
 ]
 
-[project.urls]
-Homepage = "https://github.com/MuellerConstantin/PyQvd"
-Repository = "https://github.com/MuellerConstantin/PyQvd.git"
-Issues = "https://github.com/MuellerConstantin/PyQvd/issues"
-Documentation = "https://pyqvd.readthedocs.io"
-Changelog = "https://github.com/MuellerConstantin/PyQvd/CHANGELOG.md"
+[tool.poetry.dependencies]
+python = ">=3.9"
+tabulate = "^0.9"
+pandas = { version = "^2.2", optional = true }
 
-[project.optional-dependencies]
+[tool.poetry.extras]
 pandas = ["pandas"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1"
+pytest-benchmark = "^5.2"
+pylint = "^3.1"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
