@@ -35,6 +35,7 @@ pandas = ["pandas"]
 pytest = "^8.1"
 pytest-benchmark = "^5.2"
 pylint = "^3.1"
+nox = "^2025.11.12"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
