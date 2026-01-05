@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dropped support for Python 3.8. Python >= 3.9 is now required.
+
 ### Fixed
 
 - Writer optimization: Reworked symbol and index table building to avoid repeated byte concatenation.
