@@ -1,7 +1,0 @@
-build
-twine
-pytest
-pytest-benchmark
-pylint
-pandas
-tabulate
