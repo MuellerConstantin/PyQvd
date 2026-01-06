@@ -10,6 +10,7 @@ structure or vice versa.
 
 - [Install](#install)
 - [Usage](#usage)
+- [Contributing](#contributing)
 - [License](#license)
   - [Forbidden](#forbidden)
 
@@ -42,6 +43,12 @@ print(tbl.head())
 The above example loads the _PyQvd_ library and parses an example QVD file. A QVD file is typically
 loaded using the static `QvdTable.from_qvd` function of the `QvdTable` class itself. After loading
 the file's content, numerous methods and properties are available to work with the parsed data.
+
+## Contributing
+
+If you would like to contribute to PyQvd, please fork the repository and create a pull request. We
+welcome pull requests for bug fixes, new features, and improvements to the library. Please ensure
+that your pull request and its changes follows the [Contributing Guidelines](CONTRIBUTING.md).
 
 ## License
 
