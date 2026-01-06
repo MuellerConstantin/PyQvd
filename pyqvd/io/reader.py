@@ -6,6 +6,7 @@ import math
 import struct
 import io
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Union, List, BinaryIO
 import xml.etree.ElementTree as ET
 from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValue,
@@ -55,16 +56,20 @@ class QvdFileReader:
     Class for reading QVD files into memory. Parses the binary data of a QVD file and converts it into a
     :class:`.QvdTable` object.
 
-    :param source: The source to the QVD file. Either a file path or a BinaryIO object.
+    :param source: The source to the QVD file. Either a file path (str or Path) or a BinaryIO object.
     :param chunk_size: Optional chunk size if the data should be read in chunks. The chunk size is
         given as number of records.
     """
-    def __init__(self, source: Union[str, BinaryIO], chunk_size: int = None):
+    def __init__(self, source: Union[str, Path, BinaryIO], chunk_size: int = None):
         """
-        Constructs a new QVD file parser. The source can be either a file path or a BinaryIO object.
+        Constructs a new QVD file parser. The source can be either a file path (str or Path) or a BinaryIO object.
 
         :param source: The source to the QVD file.
         """
+        # Convert Path objects to strings for compatibility with existing code
+        if isinstance(source, Path):
+            source = str(source)
+            
         self._source: Union[str, BinaryIO] = source
         self._stream: BinaryIO = None
         self._chunk_size: int = chunk_size
