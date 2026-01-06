@@ -3,6 +3,7 @@ Tests the functionality related to persisting files.
 """
 
 import os
+from pathlib import Path
 import datetime as dt
 from decimal import Decimal
 from pyqvd import QvdTable, DateValue
@@ -229,3 +230,37 @@ def test_write_qvd_file_as_binary_file_stream(tmp_path):
     assert written_data[2] == [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0)]
     assert written_data[3] == [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0)]
     assert written_data[4] == [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0)]
+
+def test_write_qvd_file_with_pathlib(tmp_path: Path):
+    """
+    Test if a data frame, constructed from a dictionary, can be
+    written to a pathlib path successfully.
+    """
+    raw_df = {
+        "columns": ["Key", "Value", "Timestamp", "Duration", "Salary"],
+        "data": [
+            [1, "A", dt.datetime(2021, 1, 1, 0, 0, 0), dt.timedelta(days=1, seconds=3620), Decimal("1000.00")],
+            [2, "B", dt.datetime(2021, 1, 2, 0, 0, 0), dt.timedelta(days=2, seconds=7240), Decimal("2000.00")],
+            [3, "C", dt.datetime(2021, 1, 3, 0, 0, 0), dt.timedelta(days=3, seconds=7200), Decimal("3000.00")],
+            [4, "D", dt.datetime(2021, 1, 4, 0, 0, 0), dt.timedelta(days=4, seconds=10800), Decimal("4000.00")],
+            [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0), dt.timedelta(days=5, seconds=14400), Decimal("5000.00")]
+        ]
+    }
+
+    df = QvdTable.from_dict(raw_df)
+
+    assert df is not None
+    assert df.shape is not None
+    assert df.shape[0] == 5
+    assert df.shape[1] == 5
+    assert df.columns is not None
+    assert len(df.columns) == 5
+    assert df.data is not None
+    assert len(df.data) == 5
+    assert df.head(2).shape == (2, 5)
+
+    path = tmp_path / "written.qvd"
+    df.to_qvd(path)
+
+    assert os.path.exists(path)
+    assert os.path.getsize(path) > 0

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added support for Python's Pathlib `Path` class for working with filesystem paths.
+
 ### Changed
 
 - Dropped support for Python 3.8. Python >= 3.9 is now required.

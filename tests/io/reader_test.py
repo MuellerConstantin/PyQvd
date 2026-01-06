@@ -3,6 +3,7 @@ Tests the functionality related to reading files.
 """
 
 import os
+from pathlib import Path
 import pytest
 from pyqvd import QvdTable
 
@@ -132,3 +133,12 @@ def test_read_binary_file_stream():
     assert df.data is not None
     assert len(df.data) == 1000
     assert df.head(5).shape == (5, 6)
+
+def test_read_qvd_file_with_pathlib():
+    """
+    Tests if QVD table can be read from a pathlib Path object properly.
+    """
+    path = Path(__file__).parent / ".." / "data" / "small.qvd"
+    df = QvdTable.from_qvd(path)
+
+    assert df is not None
