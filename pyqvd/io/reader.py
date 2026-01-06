@@ -67,7 +67,7 @@ class QvdFileReader:
         :param source: The source to the QVD file.
         """
         # Convert Path objects to strings for compatibility with existing code
-        if isinstance(source, Path):
+        if isinstance(source, Path): 
             source = str(source)
             
         self._source: Union[str, BinaryIO] = source
