@@ -9,6 +9,7 @@ from decimal import Decimal
 from functools import cmp_to_key
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Tuple, BinaryIO, Dict, Union, Literal, Callable, Optional
 from dataclasses import dataclass
 from tabulate import tabulate
@@ -2379,11 +2380,11 @@ class QvdTable:
     def __hash__(self) -> int:
         return hash((tuple(tuple(row) for row in self._data), tuple(self._columns)))
 
-    def to_qvd(self, path: str, options: "QvdFileWriterOptions" = None):
+    def to_qvd(self, path: Union[str, Path], options: "QvdFileWriterOptions" = None):
         """
         Persists the data table to a QVD file.
 
-        :param path: The path to the QVD file.
+        :param path: The path to the QVD file (str or Path object).
         """
         # pylint: disable=import-outside-toplevel
         from pyqvd.io.writer import QvdFileWriter
@@ -2448,11 +2449,11 @@ class QvdTable:
         return pd.DataFrame(data, columns=self._columns)
 
     @staticmethod
-    def from_qvd(path: str, chunk_size: int = None) -> Union["QvdTable", Iterator["QvdTable"]]:
+    def from_qvd(path: Union[str, Path], chunk_size: int = None) -> Union["QvdTable", Iterator["QvdTable"]]:
         """
         Loads a QVD file and returns its data table.
 
-        :param path: The path to the QVD file.
+        :param path: The path to the QVD file (str or Path object).
         :param chunk_size: Optional chunk size, as number of records, to read the QVD file in chunks.
         :return: The data table of the QVD file or an iterator over the slices of the data table.
         """

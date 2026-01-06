@@ -6,6 +6,7 @@ import uuid
 import time
 import struct
 import io
+from pathlib import Path
 from typing import Union, List, Dict, BinaryIO
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -32,15 +33,19 @@ class QvdFileWriter:
     """
     Class allows to write a :class:`QvdTable` as a QVD file to disk.
     """
-    def __init__(self, target: Union[str, BinaryIO], table: QvdTable,
+    def __init__(self, target: Union[str, Path, BinaryIO], table: QvdTable,
                  options: QvdFileWriterOptions = QvdFileWriterOptions()):
         """
-        Constructs a new QVD file writer. The target can be either a file path or a BinaryIO object.
+        Constructs a new QVD file writer. The target can be either a file path (str or Path) or a BinaryIO object.
 
         :param target: The destination to which the Qvd file should be written.
         :param table: The data to persist.
         :param options: The options for the QVD file writer.
         """
+        # Convert Path objects to strings for compatibility with existing code
+        if isinstance(target, Path):
+            target = str(target)
+            
         self._target = target
         self._table = table
         self._options = options if options is not None else QvdFileWriterOptions()
