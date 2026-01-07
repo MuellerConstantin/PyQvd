@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pyqvd"
-version = "2.2.2"
+version = "2.3.0"
 description = "Utility library for reading/writing Qlik View Data (QVD) files in Python."
 readme = "README.md"
 license = "MIT"
