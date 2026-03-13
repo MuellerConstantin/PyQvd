@@ -88,6 +88,55 @@ def test_read_binary_file_stream():
     assert len(df.data) == 606
     assert df.head(5).shape == (5, 8)
 
+def test_read_non_seekable_stream():
+    """
+    Tests if a non-seekable binary stream (e.g. simulating S3 streams)
+    can be read properly.
+    """
+    import io
+
+    class NonSeekableStream(io.RawIOBase):
+        """A wrapper that makes a stream non-seekable."""
+        def __init__(self, data):
+            self._stream = io.BytesIO(data)
+
+        def read(self, size=-1):
+            return self._stream.read(size)
+
+        def readinto(self, b):
+            data = self._stream.read(len(b))
+            n = len(data)
+            b[:n] = data
+            return n
+
+        def readable(self):
+            return True
+
+        def seekable(self):
+            return False
+
+        def seek(self, *args, **kwargs):
+            raise io.UnsupportedOperation("seek")
+
+        def tell(self, *args, **kwargs):
+            raise io.UnsupportedOperation("tell")
+
+    with open(os.path.join(os.path.dirname(__file__), 'data/small.qvd'), 'rb') as file:
+        data = file.read()
+
+    stream = NonSeekableStream(data)
+    df = QvdDataFrame.from_stream(stream)
+
+    assert df is not None
+    assert df.shape is not None
+    assert df.shape[0] == 606
+    assert df.shape[1] == 8
+    assert df.columns is not None
+    assert len(df.columns) == 8
+    assert df.data is not None
+    assert len(df.data) == 606
+    assert df.head(5).shape == (5, 8)
+
 def test_construct_qvd_file_from_dict():
     """
     Tests if a data frame, constructed from a dictionary, can be read properly.

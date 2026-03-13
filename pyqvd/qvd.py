@@ -356,65 +356,65 @@ class QvdFileReader:
         :param source: The source to the QVD file.
         """
         self._source = source
-        self._buffer = None
-        self._header_offset = None
-        self._symbol_table_offset = None
-        self._index_table_offset = None
         self._header = None
         self._symbol_table = None
         self._index_table = None
 
-    def _read_data(self):
+    def _parse_header(self, source):
         """
-        Reads the data of the QVD file into memory.
+        Parses the header of the QVD file by reading from the source stream
+        in 512-byte chunks. Returns any overflow bytes read past the header
+        delimiter, which belong to the symbol table.
         """
-        if isinstance(self._source, str):
-            with open(self._source, "rb") as file:
-                self._buffer = file.read()
-        elif isinstance(self._source, (io.RawIOBase, io.BufferedIOBase)):
-            self._buffer = self._source.read()
-        else:
-            raise ValueError("Unsupported source type. Please provide either a file path or a BinaryIO object.")
+        HEADER_DELIMITER = b"\r\n\0"
+        CHUNK_SIZE = 512
 
-    def _parse_header(self):
-        """
-        Parses the header of the QVD file.
-        """
-        if not self._buffer:
-            raise ValueError("The QVD file has not been loaded in the proper order or has not been loaded at all.")
+        header_buffer = b""
 
-        HEADER_DELIMITER = "\r\n\0"
+        while True:
+            chunk = source.read(CHUNK_SIZE)
 
-        header_begin_index = 0
-        header_delimiter_index = self._buffer.find(str.encode(HEADER_DELIMITER), header_begin_index)
+            if not chunk:
+                raise ValueError(
+                    "The XML header section does not exist or is not properly delimited from the binary data."
+                )
 
-        if header_delimiter_index == -1:
-            raise ValueError("The XML header section does not exist or is not properly delimited from the binary data.")
+            header_buffer += chunk
+            delimiter_index = header_buffer.find(HEADER_DELIMITER)
 
-        header_end_index = header_delimiter_index + len(HEADER_DELIMITER)
-        header_buffer = self._buffer[header_begin_index:header_end_index].decode()
+            if delimiter_index != -1:
+                header_end = delimiter_index + len(HEADER_DELIMITER)
+                overflow = header_buffer[header_end:]
+                header_buffer = header_buffer[:header_end]
+                break
 
-        self._header = ET.fromstring(header_buffer[:-1])
+        self._header = ET.fromstring(header_buffer[:-1].decode())
 
         if self._header is None:
             raise ValueError("The XML header could not be parsed.")
 
-        self._header_offset = header_begin_index
-        self._symbol_table_offset = header_end_index
-        self._index_table_offset = self._symbol_table_offset + int(self._header.find("./Offset").text, 10)
+        return overflow
 
-    def _parse_symbol_table(self):
+    def _parse_symbol_table(self, source, overflow):
         """
-        Parses the symbol table of the QVD file.
+        Parses the symbol table of the QVD file. Uses any overflow bytes
+        from header reading and reads remaining bytes from the source stream.
+        Returns any overflow bytes that belong to the index table.
         """
-        if (self._buffer is None or
-            self._header is None or
-            self._symbol_table_offset is None or
-            self._index_table_offset is None):
+        if self._header is None:
             raise ValueError("The QVD file has not been loaded in the proper order or has not been loaded at all.")
 
+        symbol_table_size = int(self._header.find("./Offset").text, 10)
+        remaining = symbol_table_size - len(overflow)
+
+        if remaining > 0:
+            symbol_buffer = overflow + source.read(remaining)
+            index_overflow = b""
+        else:
+            symbol_buffer = overflow[:symbol_table_size]
+            index_overflow = overflow[symbol_table_size:]
+
         fields = self._header.find("./Fields").findall("./QvdFieldHeader")
-        symbol_buffer = self._buffer[self._symbol_table_offset:self._index_table_offset]
 
         self._symbol_table = [None] * len(fields)
 
@@ -480,18 +480,28 @@ class QvdFileReader:
 
             self._symbol_table[index] = symbols
 
-    def _parse_index_table(self):
+        return index_overflow
+
+    def _parse_index_table(self, source, overflow):
         """
-        Parses the index table of the QVD file.
+        Parses the index table of the QVD file. Uses any overflow bytes
+        from symbol table reading and reads remaining bytes from the source
+        stream.
         """
-        if self._buffer is None or self._header is None or self._index_table_offset is None:
+        if self._header is None:
             raise ValueError("The QVD file has not been loaded in the proper order or has not been loaded at all.")
 
         fields = self._header.find("./Fields").findall("./QvdFieldHeader")
         record_size = int(self._header.find("RecordByteSize").text, 10)
         length = int(self._header.find("Length").text, 10)
 
-        index_buffer = self._buffer[self._index_table_offset:self._index_table_offset + length + 1]
+        remaining = (length + 1) - len(overflow)
+
+        if remaining > 0:
+            index_buffer = overflow + source.read(remaining)
+        else:
+            index_buffer = overflow[:length + 1]
+
         self._index_table = []
 
         pointer = 0
@@ -528,10 +538,17 @@ class QvdFileReader:
 
         :return: The loaded QVD file.
         """
-        self._read_data()
-        self._parse_header()
-        self._parse_symbol_table()
-        self._parse_index_table()
+        if isinstance(self._source, str):
+            with open(self._source, "rb") as source:
+                overflow = self._parse_header(source)
+                overflow = self._parse_symbol_table(source, overflow)
+                self._parse_index_table(source, overflow)
+        elif isinstance(self._source, (io.RawIOBase, io.BufferedIOBase)):
+            overflow = self._parse_header(self._source)
+            overflow = self._parse_symbol_table(self._source, overflow)
+            self._parse_index_table(self._source, overflow)
+        else:
+            raise ValueError("Unsupported source type. Please provide either a file path or a BinaryIO object.")
 
         def _get_row(index: int) -> List[any]:
             if index >= len(self._index_table):
