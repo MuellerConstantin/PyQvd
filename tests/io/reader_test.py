@@ -3,9 +3,18 @@ Tests the functionality related to reading files.
 """
 
 import os
+import io
 from pathlib import Path
 import pytest
 from pyqvd import QvdTable
+
+class NonSeekableBytesIO(io.BytesIO):
+    """Simple non-seekable stream wrapper for reader tests."""
+    def seekable(self) -> bool:
+        return False
+
+    def seek(self, offset, whence=0):
+        raise io.UnsupportedOperation("stream is not seekable")
 
 def test_read_qvd_file_with_1000_rows():
     """
@@ -123,6 +132,55 @@ def test_read_binary_file_stream():
     """
     with open(os.path.join(os.path.dirname(__file__), "../data/small.qvd"), "rb") as file:
         df = QvdTable.from_stream(file)
+
+    assert df is not None
+    assert df.shape is not None
+    assert df.shape[0] == 1000
+    assert df.shape[1] == 6
+    assert df.columns is not None
+    assert len(df.columns) == 6
+    assert df.data is not None
+    assert len(df.data) == 1000
+    assert df.head(5).shape == (5, 6)
+
+
+def test_read_non_seekable_binary_file_stream_in_chunks():
+    """
+    Tests if QVD table can be read in chunks from a non-seekable binary stream.
+    """
+    with open(os.path.join(os.path.dirname(__file__), "../data/medium.qvd"), "rb") as file:
+        stream = NonSeekableBytesIO(file.read())
+        itr = QvdTable.from_stream(stream, chunk_size=5000)
+
+    assert itr is not None
+    assert len(itr) == 4
+
+    total_tbl = None
+
+    for tbl in itr:
+        if total_tbl is None:
+            total_tbl = tbl
+        else:
+            total_tbl = total_tbl.concat(tbl)
+
+    assert total_tbl is not None
+    assert total_tbl.shape is not None
+    assert total_tbl.shape[0] == 20000
+    assert total_tbl.shape[1] == 6
+    assert total_tbl.columns is not None
+    assert len(total_tbl.columns) == 6
+    assert total_tbl.data is not None
+    assert len(total_tbl.data) == 20000
+    assert total_tbl.head(5).shape == (5, 6)
+
+
+def test_read_non_seekable_binary_file_stream():
+    """
+    Tests if QVD table can be read from a non-seekable binary stream.
+    """
+    with open(os.path.join(os.path.dirname(__file__), "../data/small.qvd"), "rb") as file:
+        stream = NonSeekableBytesIO(file.read())
+        df = QvdTable.from_stream(stream)
 
     assert df is not None
     assert df.shape is not None

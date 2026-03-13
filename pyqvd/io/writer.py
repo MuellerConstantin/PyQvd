@@ -45,7 +45,7 @@ class QvdFileWriter:
         # Convert Path objects to strings for compatibility with existing code
         if isinstance(target, Path):
             target = str(target)
-            
+
         self._target = target
         self._table = table
         self._options = options if options is not None else QvdFileWriterOptions()
