@@ -319,30 +319,45 @@ class QvdFileReader:
         """
         self._read_index_table_data()
 
-        self._index_table = []
+        # For performance reasons, we gonna bind instance variables to local variables
+        # to avoid attribute lookups in the hot loop
+        buffer = self._index_table_buffer
+        record_size = self._header.record_byte_size
+        fields = self._header.fields
+        masks = self._field_masks
+        n_fields = len(fields)
 
+        # Pre-extract field data to avoid attribute lookups in hot loop
+        bit_offsets = [f.bit_offset for f in fields]
+        bit_widths = [f.bit_width for f in fields]
+        biases = [f.bias for f in fields]
+
+        table = []
         pointer = 0
+        buffer_len = len(buffer)
 
-        while pointer < len(self._index_table_buffer):
-            record_buffer = self._index_table_buffer[pointer:pointer + self._header.record_byte_size]
-
-            record_indices = []
+        while pointer < buffer_len:
+            record_buffer = buffer[pointer:pointer + record_size]
 
             # Convert bytes to integer
-            record_content = int.from_bytes(record_buffer, byteorder='little')
+            record_content = int.from_bytes(record_buffer, byteorder="little")
 
-            for field_index, field in enumerate(self._header.fields):
-                if field.bit_width == 0:
+            # Preallocate instead of append
+            record_indices = [0] * n_fields
+
+            for i in range(n_fields):
+                if bit_widths[i] == 0:
                     symbol_index = 0
                 else:
                     # Extract the symbol index for the field using bit manipulation and the precomputed field masks
-                    symbol_index = (record_content >> field.bit_offset) & self._field_masks[field_index]
+                    symbol_index = (record_content >> bit_offsets[i]) & masks[i]
 
-                symbol_index += field.bias
-                record_indices.append(symbol_index)
+                record_indices[i] = symbol_index + biases[i]
 
-            self._index_table.append(record_indices)
-            pointer += self._header.record_byte_size
+            table.append(record_indices)
+            pointer += record_size
+
+        self._index_table = table
 
     def _read_index_table_next_chunk_data(self, chunk_size: int) -> bytes:
         """
@@ -360,31 +375,44 @@ class QvdFileReader:
         :param chunk_size: The size of the chunk as number of records.
         :return: The chunk of the index table.
         """
-        chunk: List[List[int]] = []
         chunk_buffer = self._read_index_table_next_chunk_data(chunk_size)
 
+        # For performance reasons, we gonna bind instance variables to local variables
+        # to avoid attribute lookups in the hot loop
+        record_size = self._header.record_byte_size
+        fields = self._header.fields
+        masks = self._field_masks
+
+        n_fields = len(fields)
+
+        # Pre-extract field data to avoid attribute lookups in hot loop
+        bit_offsets = [f.bit_offset for f in fields]
+        bit_widths = [f.bit_width for f in fields]
+        biases = [f.bias for f in fields]
+
+        chunk: List[List[int]] = []
         pointer = 0
+        buffer_len = len(chunk_buffer)
 
-        while pointer < len(chunk_buffer):
-            record_buffer = chunk_buffer[pointer:pointer + self._header.record_byte_size]
-
-            record_indices = []
+        while pointer < buffer_len:
+            record_buffer = chunk_buffer[pointer:pointer + record_size]
 
             # Convert bytes to integer
-            record_content = int.from_bytes(record_buffer, byteorder='little')
+            record_content = int.from_bytes(record_buffer, byteorder="little")
 
-            for field_index, field in enumerate(self._header.fields):
-                if field.bit_width == 0:
+            record_indices = [0] * n_fields
+
+            for i in range(n_fields):
+                if bit_widths[i] == 0:
                     symbol_index = 0
                 else:
                     # Extract the symbol index for the field using bit manipulation and the precomputed field masks
-                    symbol_index = (record_content >> field.bit_offset) & self._field_masks[field_index]
+                    symbol_index = (record_content >> bit_offsets[i]) & masks[i]
 
-                symbol_index += field.bias
-                record_indices.append(symbol_index)
+                record_indices[i] = symbol_index + biases[i]
 
             chunk.append(record_indices)
-            pointer += self._header.record_byte_size
+            pointer += record_size
 
         return chunk
 
@@ -392,15 +420,12 @@ class QvdFileReader:
         """
         Decodes a record from the index table.
         """
-        decoded_record = [None] * len(record)
+        symbol_table = self._symbol_table
 
-        for field_index, symbol_index in enumerate(record):
-            if symbol_index < 0:
-                decoded_record[field_index] = None
-            else:
-                decoded_record[field_index] = self._symbol_table[field_index][symbol_index]
-
-        return decoded_record
+        return [
+            None if symbol_index < 0 else symbol_table[field_index][symbol_index]
+            for field_index, symbol_index in enumerate(record)
+        ]
 
     def read(self) -> Union[QvdTable, Iterator[QvdTable]]:
         """
