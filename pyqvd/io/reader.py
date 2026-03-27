@@ -321,7 +321,7 @@ class QvdFileReader:
 
         # For performance reasons, we gonna bind instance variables to local variables
         # to avoid attribute lookups in the hot loop
-        buffer = self._index_table_buffer
+        buffer = memoryview(self._index_table_buffer)
         record_size = self._header.record_byte_size
         fields = self._header.fields
         masks = self._field_masks
@@ -332,8 +332,10 @@ class QvdFileReader:
         bit_widths = [f.bit_width for f in fields]
         biases = [f.bias for f in fields]
 
-        table = []
+        no_of_records = self._header.no_of_records
+        table = [None] * no_of_records
         pointer = 0
+        row_index = 0
         buffer_len = len(buffer)
 
         while pointer < buffer_len:
@@ -354,8 +356,9 @@ class QvdFileReader:
 
                 record_indices[i] = symbol_index + biases[i]
 
-            table.append(record_indices)
+            table[row_index] = record_indices
             pointer += record_size
+            row_index += 1
 
         self._index_table = table
 
@@ -390,9 +393,11 @@ class QvdFileReader:
         bit_widths = [f.bit_width for f in fields]
         biases = [f.bias for f in fields]
 
-        chunk: List[List[int]] = []
-        pointer = 0
         buffer_len = len(chunk_buffer)
+        number_of_records = buffer_len // record_size
+        chunk: List[List[int]] = [None] * number_of_records
+        pointer = 0
+        row_index = 0
 
         while pointer < buffer_len:
             record_buffer = chunk_buffer[pointer:pointer + record_size]
@@ -411,8 +416,9 @@ class QvdFileReader:
 
                 record_indices[i] = symbol_index + biases[i]
 
-            chunk.append(record_indices)
+            chunk[row_index] = record_indices
             pointer += record_size
+            row_index += 1
 
         return chunk
 

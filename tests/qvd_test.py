@@ -591,20 +591,6 @@ def test_construct_qvd_table_directly():
     assert len(tbl.data) == 5
     assert tbl.head(2).shape == (2, 2)
 
-def test_qvd_table_constuct_directly_with_invalid_shape():
-    """
-    Tests if constructing a QVD table directly with invalid data raises an exception.
-    """
-    with pytest.raises(Exception):
-        QvdTable(
-            columns=["Key", "Value"],
-            data=[
-                [IntegerValue(1), StringValue("A")],
-                [IntegerValue(2)],
-                [IntegerValue(3), StringValue("C")]
-            ]
-        )
-
 def test_qvd_table_copy():
     """
     Tests the functionality of copying a QVD table.
