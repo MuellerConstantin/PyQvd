@@ -13,12 +13,13 @@ def tests(session):
     session.run("pytest")
 
 @nox.session
-def benchmarks(session):
+def benchmark(session):
     """
     Run benchmark tests.
     """
     session.run("poetry", "install", "-E", "pandas", external=True)
-    session.run("pytest -m benchmark")
+    session.run("pytest", "-m", "benchmark", "--benchmark-autosave",
+                "--benchmark-warmup=on", "--benchmark-warmup-iterations=1")
 
 @nox.session
 def lint(session):
