@@ -75,6 +75,7 @@ class QvdFileReader:
         self._stream_buffer: bytes = b""
         self._symbol_table_offset: int = None
         self._index_table_offset: int = None
+        self._field_masks: List[int] = None
 
         self._header_buffer: bytes = None
         self._header: QvdTableHeader = None
@@ -138,6 +139,7 @@ class QvdFileReader:
         self._header.source_file_size = int(header_xml.find("SourceFileSize").text, 10)
 
         self._header.fields = []
+        self._field_masks = []
 
         for field_xml in header_xml.find("Fields"):
             field = QvdFieldHeader()
@@ -160,6 +162,10 @@ class QvdFileReader:
             field.length = int(field_xml.find("Length").text, 10)
             field.comment = field_xml.find("Comment").text
             field.tags = [tag.text for tag in field_xml.find("Tags")]
+
+            # Precompute field masks for efficient bit extraction later
+            mask = (1 << field.bit_width) - 1 if field.bit_width else 0
+            self._field_masks.append(mask)
 
             self._header.fields.append(field)
 
@@ -301,28 +307,6 @@ class QvdFileReader:
 
             self._symbol_table[field_index] = symbols
 
-    def _extract_bits(self, byte_buffer: bytes, bit_offset: int, bit_width: int) -> int:
-        """
-        Extracts bits from a byte buffer using bitwise operations.
-        Much faster than string conversion.
-
-        :param byte_buffer: The buffer containing the packed bits
-        :param bit_offset: Starting bit position
-        :param bit_width: Number of bits to extract
-        :return: The extracted value as an integer
-        """
-        if bit_width == 0:
-            return 0
-
-        # Convert bytes to integer
-        value = int.from_bytes(byte_buffer, byteorder='little')
-
-        # Extract the bits using bitwise operations
-        mask = (1 << bit_width) - 1  # Create mask of bit_width 1s
-        result = (value >> bit_offset) & mask
-
-        return result
-
     def _read_index_table_data(self):
         """
         Reads the index table data of the QVD file into memory.
@@ -344,11 +328,15 @@ class QvdFileReader:
 
             record_indices = []
 
-            for field in self._header.fields:
+            # Convert bytes to integer
+            record_content = int.from_bytes(record_buffer, byteorder='little')
+
+            for field_index, field in enumerate(self._header.fields):
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = self._extract_bits(record_buffer, field.bit_offset, field.bit_width)
+                    # Extract the symbol index for the field using bit manipulation and the precomputed field masks
+                    symbol_index = (record_content >> field.bit_offset) & self._field_masks[field_index]
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
@@ -382,11 +370,15 @@ class QvdFileReader:
 
             record_indices = []
 
-            for field in self._header.fields:
+            # Convert bytes to integer
+            record_content = int.from_bytes(record_buffer, byteorder='little')
+
+            for field_index, field in enumerate(self._header.fields):
                 if field.bit_width == 0:
                     symbol_index = 0
                 else:
-                    symbol_index = self._extract_bits(record_buffer, field.bit_offset, field.bit_width)
+                    # Extract the symbol index for the field using bit manipulation and the precomputed field masks
+                    symbol_index = (record_content >> field.bit_offset) & self._field_masks[field_index]
 
                 symbol_index += field.bias
                 record_indices.append(symbol_index)
