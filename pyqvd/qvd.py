@@ -1315,10 +1315,6 @@ class QvdTable:
         :param data: The data of the data table.
         :param columns: The columns of the data table.
         """
-        # Ensure all records have the same number of values
-        if len(set(len(row) for row in data)) > 1:
-            raise ValueError("All records must have the same number of values.")
-
         # Ensure the number of columns matches the number of values in each record
         if len(data) > 0 and len(data[0]) != len(columns):
             raise ValueError("The number of columns must match the number of values in each record.")
@@ -1330,10 +1326,6 @@ class QvdTable:
         # Ensure all column names are strings
         if not all(isinstance(column, str) for column in columns):
             raise TypeError("All column names must be strings.")
-
-        # Ensure all values are QvdValue objects
-        if not all(isinstance(value, QvdValue) or value is None for row in data for value in row):
-            raise TypeError("All values must be QvdValue objects.")
 
         self._data: List[List[QvdValue]] = data
         self._columns: List[str] = columns
