@@ -256,16 +256,15 @@ class QvdFileWriter:
                     else:
                         symbol_index = self._symbol_table[column_index][value]
 
-                # Convert the integer indices to binary representation
-                index_bits = format(symbol_index, "b")
-                self._index_table[record_index][column_index] = index_bits
+                self._index_table[record_index][column_index] = symbol_index
 
         bit_offset = 0
 
-        # Normalize the bit representation of the indices by padding with zeros
+        # Determine the bit width and bit offset of each column and update the header accordingly
         for column_index, _ in enumerate(self._table._columns):
             field_contains_none = self._symbol_table_nullability[column_index]
-            max_bit_width = max([len(record[column_index]) for record in self._index_table])
+            max_value = max([record[column_index] for record in self._index_table])
+            max_bit_width = max_value.bit_length() if max_value > 0 else 1
 
             # Bit offset is the sum of the bit widths of all previous columns
             self._header.fields[column_index].bit_offset = bit_offset
@@ -276,12 +275,15 @@ class QvdFileWriter:
 
             bit_offset += max_bit_width
 
+        # Concatenate the bit representation of the indices of each row to a single binary string per row
+        for record_index, record in enumerate(self._index_table):
+            # Convert list of symbol indices to their binary representation
+            record = [format(symbol_index, "b") for symbol_index in record]
+
             # Pad the bit representation of the indices with zeros to match the bit width
-            for record in self._index_table:
+            for column_index, _ in enumerate(self._table._columns):
                 record[column_index] = record[column_index].rjust(self._header.fields[column_index].bit_width, "0")
 
-        # Concatenate the bit representation of the indices of each row to a single binary string per row
-        for record in self._index_table:
             # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
             # stored in the least significant bits of the record, and the last column's index is stored
             # in the most significant bits of the record.
