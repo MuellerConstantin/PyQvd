@@ -191,7 +191,10 @@ class QvdFileWriter:
         """
         Builds the index table of the QVD file.
         """
-        self._index_table = [None] * self._header.no_of_records
+        no_records = self._header.no_of_records
+        no_fields = self._header.no_of_fields
+
+        self._index_table = [[None] * no_fields for _ in range(no_records)]
         index_buffers = []
 
         # Each row in the index table is represented by one or more bytes, the number of bytes used to represent a
@@ -238,8 +241,6 @@ class QvdFileWriter:
 
         # Convert the values of each row to their corresponding symbol table indices
         for record_index, record in enumerate(self._table._data):
-            record_indices: List[str] = [None] * self._header.no_of_fields
-
             for column_index, _ in enumerate(self._table._columns):
                 # Convert the raw values to indices referring to the symbol table
                 value = record[column_index]
@@ -257,22 +258,23 @@ class QvdFileWriter:
 
                 # Convert the integer indices to binary representation
                 index_bits = format(symbol_index, "b")
-                record_indices[column_index] = index_bits
+                self._index_table[record_index][column_index] = index_bits
 
-            self._index_table[record_index] = record_indices
+        bit_offset = 0
 
         # Normalize the bit representation of the indices by padding with zeros
         for column_index, _ in enumerate(self._table._columns):
-            # Update the field header with the new bit metadata
             field_contains_none = self._symbol_table_nullability[column_index]
+            max_bit_width = max([len(record[column_index]) for record in self._index_table])
+
             # Bit offset is the sum of the bit widths of all previous columns
-            self._header.fields[column_index].bit_offset = sum(
-                [self._header.fields[index].bit_width for index in range(column_index)])
+            self._header.fields[column_index].bit_offset = bit_offset
             # Bit width is the maximum bit width of all indices of the column
-            self._header.fields[column_index].bit_width = max(
-                [len(record[column_index]) for record in self._index_table])
+            self._header.fields[column_index].bit_width = max_bit_width
             # Bias is used to shift the indices to represent None values
             self._header.fields[column_index].bias = -2 if field_contains_none else 0
+
+            bit_offset += max_bit_width
 
             # Pad the bit representation of the indices with zeros to match the bit width
             for record in self._index_table:
