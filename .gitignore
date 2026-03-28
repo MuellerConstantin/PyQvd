@@ -298,3 +298,6 @@ benchmarks/*.txt
 benchmark*.json
 benchmark*.csv
 benchmark*.txt
+
+# Profiling
+.profiling/

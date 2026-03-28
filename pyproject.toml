@@ -36,12 +36,14 @@ pytest = "^8.1"
 pytest-benchmark = "^5.2"
 pylint = "^3.1"
 nox = "^2025.11.12"
+pyinstrument = "^5.1.2"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not benchmark'"
+addopts = "-m 'not benchmark and not profiling'"
 markers = [
-    "benchmark: performance benchmarks (not run by default)"
+    "benchmark: performance benchmarks (not run by default)",
+    "profiling: performance profiling (not run by default)"
 ]
 
 [tool.pylint.main]

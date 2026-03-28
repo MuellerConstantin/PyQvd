@@ -22,6 +22,14 @@ def benchmark(session):
                 "--benchmark-warmup=on", "--benchmark-warmup-iterations=1")
 
 @nox.session
+def profiling(session):
+    """
+    Run profiling tests.
+    """
+    session.run("poetry", "install", "-E", "pandas", external=True)
+    session.run("pytest", "-m", "profiling", "-s")
+
+@nox.session
 def lint(session):
     """
     Run linter.
