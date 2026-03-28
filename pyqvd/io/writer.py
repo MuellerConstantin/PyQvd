@@ -76,6 +76,19 @@ class QvdFileWriter:
         self._header.no_of_records = len(self._table._data)
         self._header.no_of_fields = len(self._table._columns)
 
+        self._symbol_serializers = {
+            TimeValue: self._serialize_symbol_time,
+            DateValue: self._serialize_symbol_date,
+            TimestampValue: self._serialize_symbol_timestamp,
+            IntervalValue: self._serialize_symbol_interval,
+            MoneyValue: self._serialize_symbol_money,
+            IntegerValue: self._serialize_symbol_int,
+            DoubleValue: self._serialize_symbol_double,
+            StringValue: self._serialize_symbol_string,
+            DualIntegerValue: self._serialize_symbol_dual_int,
+            DualDoubleValue: self._serialize_symbol_dual_double,
+        }
+
     def _build_symbol_table(self):
         """
         Builds the symbol table of the QVD file.
@@ -86,8 +99,15 @@ class QvdFileWriter:
         total_offset = 0
 
         for column_index, _ in enumerate(self._table._columns):
-            # Uses a dictionary over a set to preserve the order of the values and over a loop for performance reasons
-            unique_values = list(dict.fromkeys([row[column_index] for row in self._table._data]).keys())
+            seen_values = {}
+            unique_values = []
+
+            # Determine the unique values of the column and their corresponding indices in the symbol table
+            for row in self._table._data:
+                value = row[column_index]
+                if value not in seen_values:
+                    seen_values[value] = None
+                    unique_values.append(value)
 
             symbols: Dict[QvdValue, int] = {}
             contains_none = False
@@ -423,6 +443,50 @@ class QvdFileWriter:
         self._build_header()
         self._write_data()
 
+    def _serialize_symbol_time(self, value: TimeValue) -> bytes:
+        display_value = self._options.time_formatter.format(value)
+        return (b"\06" + struct.pack("<d", value.calculation_value) +
+                display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_date(self, value: DateValue) -> bytes:
+        display_value = self._options.date_formatter.format(value)
+        return (b"\05" +
+                value.calculation_value.to_bytes(4, "little", signed=True) +
+                display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_timestamp(self, value: TimestampValue) -> bytes:
+        display_value = self._options.timestamp_formatter.format(value)
+        return (b"\06" + struct.pack("<d", value.calculation_value) +
+                display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_interval(self, value: IntervalValue) -> bytes:
+        display_value = self._options.interval_formatter.format(value)
+        return (b"\06" + struct.pack("<d", value.calculation_value) +
+                display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_money(self, value: MoneyValue) -> bytes:
+        display_value = self._options.money_formatter.format(value)
+        return (b"\06" + struct.pack("<d", value.calculation_value) +
+                display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_int(self, value: IntegerValue) -> bytes:
+        return b"\01" + value.calculation_value.to_bytes(4, "little", signed=True)
+
+    def _serialize_symbol_double(self, value: DoubleValue) -> bytes:
+        return b"\02" + struct.pack("<d", value.calculation_value)
+
+    def _serialize_symbol_string(self, value: StringValue) -> bytes:
+        return b"\04" + value.calculation_value.encode("utf-8") + b"\0"
+
+    def _serialize_symbol_dual_int(self, value: DualIntegerValue) -> bytes:
+        return (b"\05" +
+                value.calculation_value.to_bytes(4, "little", signed=True) +
+                value.display_value.encode("utf-8") + b"\0")
+
+    def _serialize_symbol_dual_double(self, value: DualDoubleValue) -> bytes:
+        return (b"\06" + struct.pack("<d", value.calculation_value) +
+                value.display_value.encode("utf-8") + b"\0")
+
     def _get_symbol_byte_representation(self, value: QvdValue) -> bytes:
         """
         Returns the byte representation of a symbol value.
@@ -430,50 +494,7 @@ class QvdFileWriter:
         :param value: The symbol value to convert.
         :return: The byte representation of the symbol value.
         """
-        if isinstance(value, TimeValue):
-            # Recreate display value to ensure uniform formatting
-            display_value = self._options.time_formatter.format(value)
-
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, DateValue):
-            # Recreate display value to ensure uniform formatting
-            display_value = self._options.date_formatter.format(value)
-
-            return (b"\05" +
-                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
-                    str.encode(display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, TimestampValue):
-            # Recreate display value to ensure uniform formatting
-            display_value = self._options.timestamp_formatter.format(value)
-
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, IntervalValue):
-            # Recreate display value to ensure uniform formatting
-            display_value = self._options.interval_formatter.format(value)
-
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, MoneyValue):
-            # Recreate display value to ensure uniform formatting
-            display_value = self._options.money_formatter.format(value)
-
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(display_value, encoding="utf-8") + b"\0")
-        elif isinstance(value, IntegerValue):
-            return b"\01" + value.calculation_value.to_bytes(4, byteorder="little", signed=True)
-        elif isinstance(value, DoubleValue):
-            return b"\02" + struct.pack("<d", value.calculation_value)
-        elif isinstance(value, StringValue):
-            return b"\04" + str.encode(value.calculation_value, encoding="utf-8") + b"\0"
-        elif isinstance(value, DualIntegerValue):
-            return (b"\05" +
-                    value.calculation_value.to_bytes(4, byteorder="little", signed=True) +
-                    str.encode(value.display_value, encoding="utf-8") +
-                    b"\0")
-        elif isinstance(value, DualDoubleValue):
-            return (b"\06" + struct.pack("<d", value.calculation_value) +
-                    str.encode(value.display_value, encoding="utf-8") + b"\0")
-        else:
-            raise ValueError("Unsupported symbol value type.")
+        try:
+            return self._symbol_serializers[type(value)](value)
+        except KeyError as exc:
+            raise ValueError("Unsupported symbol value type.") from exc
