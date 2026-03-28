@@ -275,46 +275,35 @@ class QvdFileWriter:
 
             bit_offset += max_bit_width
 
-        # Concatenate the bit representation of the indices of each row to a single binary string per row
+        record_bit_width = sum(field.bit_width for field in self._header.fields)
+        record_byte_size = (record_bit_width + 7) // 8
+
+        # Concatenate the bit representation of the indices of each row to a single binary representation
         for record_index, record in enumerate(self._index_table):
-            # Convert list of symbol indices to their binary representation
-            record = [format(symbol_index, "b") for symbol_index in record]
+            value = 0
+            bit_pos = 0
 
-            # Pad the bit representation of the indices with zeros to match the bit width
-            for column_index, _ in enumerate(self._table._columns):
-                record[column_index] = record[column_index].rjust(self._header.fields[column_index].bit_width, "0")
-
-            # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
-            # stored in the least significant bits of the record, and the last column's index is stored
-            # in the most significant bits of the record.
-            #
-            # MSB                    LSB
-            # Bit 7                Bit 0
-            # [ padding ][ C ][ B ][ A ]
-            #
-            # Therefore, the order of the indices/columns within a record needs to be reversed before
-            # converting the binary string.
-            record = record[::-1]
-            bits = "".join(record)
-
-            # Pad the binary string with zeros to match whole bytes. After that split the binary string into 8 bit
-            # chunks and convert each chunk to a byte.
-            padding_width = (8 - len(bits) % 8) % 8
-            padded_bits = "0" * padding_width + bits
-            byte_values = [int(padded_bits[index:index + 8], 2) for index in range(0, len(padded_bits), 8)]
-
-            # Convert list of byte values to bytes
-            record_byte_representation = struct.pack("<" + "B" * len(byte_values), *byte_values)
+            # column order: field0 -> LSB
+            for column_index, symbol_index in enumerate(record):
+                # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
+                # stored in the least significant bits of the record, and the last column's index is stored
+                # in the most significant bits of the record.
+                #
+                # MSB                    LSB
+                # Bit 7                Bit 0
+                # [ padding ][ C ][ B ][ A ]
+                bit_width = self._header.fields[column_index].bit_width
+                value |= (symbol_index & ((1 << bit_width) - 1)) << bit_pos
+                bit_pos += bit_width
 
             # A final record can consist of multiple bytes, depending on the total bit width of all columns.
-            # The QVD format expects little endian byte order. Therefore, the byte representation of the
-            # record needs to be reversed to match little endian byte order.
-            record_byte_representation = record_byte_representation[::-1]
+            # The QVD format expects little endian byte order.
+            record_byte_representation = value.to_bytes(record_byte_size, byteorder="little")
 
             index_buffers.append(record_byte_representation)
 
         self._index_table_buffer = b"".join(index_buffers)
-        self._header.record_byte_size = len(self._index_table_buffer) // self._header.no_of_records
+        self._header.record_byte_size = record_byte_size
         self._header.length = len(self._index_table_buffer)
         self._header.offset = len(self._symbol_table_buffer)
 
