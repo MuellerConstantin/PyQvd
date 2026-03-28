@@ -236,8 +236,9 @@ class QvdFileWriter:
         # called index table, basically a byte buffer. The information about the bit width and bit offset of each column
         # is stored in the header.
 
+        # Convert the values of each row to their corresponding symbol table indices
         for record_index, record in enumerate(self._table._data):
-            record_indices = [None] * self._header.no_of_fields
+            record_indices: List[str] = [None] * self._header.no_of_fields
 
             for column_index, _ in enumerate(self._table._columns):
                 # Convert the raw values to indices referring to the symbol table
@@ -279,12 +280,31 @@ class QvdFileWriter:
 
         # Concatenate the bit representation of the indices of each row to a single binary string per row
         for record in self._index_table:
+            # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
+            # stored in the least significant bits of the record, and the last column's index is stored
+            # in the most significant bits of the record.
+            #
+            # MSB                    LSB
+            # Bit 7                Bit 0
+            # [ padding ][ C ][ B ][ A ]
+            #
+            # Therefore, the order of the indices/columns within a record needs to be reversed before
+            # converting the binary string.
             record = record[::-1]
             bits = "".join(record)
+
+            # Pad the binary string with zeros to match whole bytes. After that split the binary string into 8 bit
+            # chunks and convert each chunk to a byte.
             padding_width = (8 - len(bits) % 8) % 8
             padded_bits = "0" * padding_width + bits
             byte_values = [int(padded_bits[index:index + 8], 2) for index in range(0, len(padded_bits), 8)]
+
+            # Convert list of byte values to bytes
             record_byte_representation = struct.pack("<" + "B" * len(byte_values), *byte_values)
+
+            # A final record can consist of multiple bytes, depending on the total bit width of all columns.
+            # The QVD format expects little endian byte order. Therefore, the byte representation of the
+            # record needs to be reversed to match little endian byte order.
             record_byte_representation = record_byte_representation[::-1]
 
             index_buffers.append(record_byte_representation)
