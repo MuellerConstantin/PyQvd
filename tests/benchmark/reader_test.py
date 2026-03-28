@@ -6,8 +6,6 @@ from pathlib import Path
 import pytest
 from pyqvd import QvdTable
 
-DATA_DIR = Path(__file__).parent / ".." / "data"
-
 @pytest.mark.benchmark(group="qvd-read")
 @pytest.mark.parametrize(
     "file_name",
@@ -19,11 +17,11 @@ DATA_DIR = Path(__file__).parent / ".." / "data"
         "giant.qvd",    # ~20M rows 6 columns
     ],
 )
-def test_benchmark_qvd_read(benchmark, file_name):
+def test_benchmark_qvd_read(benchmark, file_name: str, test_data_dir: Path):
     """
     Benchmark reading a QVD file of different sizes.
     """
-    path = DATA_DIR / file_name
+    path = test_data_dir / file_name
     file_size = path.stat().st_size / (1024 * 1024)
 
     table = benchmark(QvdTable.from_qvd, str(path))

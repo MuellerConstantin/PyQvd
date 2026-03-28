@@ -2,7 +2,6 @@
 Tests the functionality related to reading files.
 """
 
-import os
 import io
 from pathlib import Path
 import pytest
@@ -16,11 +15,11 @@ class NonSeekableBytesIO(io.BytesIO):
     def seek(self, offset, whence=0):
         raise io.UnsupportedOperation("stream is not seekable")
 
-def test_read_qvd_file_with_1000_rows():
+def test_read_qvd_file_with_1000_rows(test_data_dir: Path):
     """
     Tests if a small QVD file can be parsed properly.
     """
-    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), "../data/small.qvd"))
+    df = QvdTable.from_qvd(test_data_dir / "small.qvd")
 
     assert df is not None
     assert df.shape is not None
@@ -32,11 +31,11 @@ def test_read_qvd_file_with_1000_rows():
     assert len(df.data) == 1000
     assert df.head(5).shape == (5, 6)
 
-def test_read_qvd_file_with_20000_rows():
+def test_read_qvd_file_with_20000_rows(test_data_dir: Path):
     """
     Tests if a medium QVD file can be parsed properly.
     """
-    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), "../data/medium.qvd"))
+    df = QvdTable.from_qvd(test_data_dir / "medium.qvd")
 
     assert df is not None
     assert df.shape is not None
@@ -48,11 +47,11 @@ def test_read_qvd_file_with_20000_rows():
     assert len(df.data) == 20000
     assert df.head(5).shape == (5, 6)
 
-def test_read_qvd_file_with_60000_rows():
+def test_read_qvd_file_with_60000_rows(test_data_dir: Path):
     """
     Tests if a large QVD file can be parsed properly.
     """
-    df = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), "../data/large.qvd"))
+    df = QvdTable.from_qvd(test_data_dir / "large.qvd")
 
     assert df is not None
     assert df.shape is not None
@@ -64,11 +63,11 @@ def test_read_qvd_file_with_60000_rows():
     assert len(df.data) == 200000
     assert df.head(5).shape == (5, 6)
 
-def test_read_qvd_file_in_chunks():
+def test_read_qvd_file_in_chunks(test_data_dir: Path):
     """
     Tests if a large QVD file can be parsed properly in chunks.
     """
-    itr = QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), "../data/medium.qvd"), chunk_size=5000)
+    itr = QvdTable.from_qvd(test_data_dir / "medium.qvd", chunk_size=5000)
 
     assert itr is not None
     assert len(itr) == 4
@@ -91,18 +90,18 @@ def test_read_qvd_file_in_chunks():
     assert len(total_tbl.data) == 20000
     assert total_tbl.head(5).shape == (5, 6)
 
-def test_read_damaged_qvd_file():
+def test_read_damaged_qvd_file(test_data_dir: Path):
     """
     Tests if reading a damaged QVD file fails as expected.
     """
     with pytest.raises(Exception):
-        QvdTable.from_qvd(os.path.join(os.path.dirname(__file__), "../data/damaged.qvd"))
+        QvdTable.from_qvd(test_data_dir / "damaged.qvd")
 
-def test_read_binary_file_stream_in_chunks():
+def test_read_binary_file_stream_in_chunks(test_data_dir: Path):
     """
     Tests if QVD table can be read from a binary file stream properly in chunks.
     """
-    with open(os.path.join(os.path.dirname(__file__), "../data/medium.qvd"), "rb") as file:
+    with open(test_data_dir / "medium.qvd", "rb") as file:
         itr = QvdTable.from_stream(file, chunk_size=5000)
 
         assert itr is not None
@@ -126,11 +125,11 @@ def test_read_binary_file_stream_in_chunks():
         assert len(total_tbl.data) == 20000
         assert total_tbl.head(5).shape == (5, 6)
 
-def test_read_binary_file_stream():
+def test_read_binary_file_stream(test_data_dir: Path):
     """
     Tests if QVD table can be read from a binary file stream properly.
     """
-    with open(os.path.join(os.path.dirname(__file__), "../data/small.qvd"), "rb") as file:
+    with open(test_data_dir / "small.qvd", "rb") as file:
         df = QvdTable.from_stream(file)
 
     assert df is not None
@@ -144,11 +143,11 @@ def test_read_binary_file_stream():
     assert df.head(5).shape == (5, 6)
 
 
-def test_read_non_seekable_binary_file_stream_in_chunks():
+def test_read_non_seekable_binary_file_stream_in_chunks(test_data_dir: Path):
     """
     Tests if QVD table can be read in chunks from a non-seekable binary stream.
     """
-    with open(os.path.join(os.path.dirname(__file__), "../data/medium.qvd"), "rb") as file:
+    with open(test_data_dir / "medium.qvd", "rb") as file:
         stream = NonSeekableBytesIO(file.read())
         itr = QvdTable.from_stream(stream, chunk_size=5000)
 
@@ -174,11 +173,11 @@ def test_read_non_seekable_binary_file_stream_in_chunks():
     assert total_tbl.head(5).shape == (5, 6)
 
 
-def test_read_non_seekable_binary_file_stream():
+def test_read_non_seekable_binary_file_stream(test_data_dir: Path):
     """
     Tests if QVD table can be read from a non-seekable binary stream.
     """
-    with open(os.path.join(os.path.dirname(__file__), "../data/small.qvd"), "rb") as file:
+    with open(test_data_dir / "small.qvd", "rb") as file:
         stream = NonSeekableBytesIO(file.read())
         df = QvdTable.from_stream(stream)
 
@@ -192,11 +191,11 @@ def test_read_non_seekable_binary_file_stream():
     assert len(df.data) == 1000
     assert df.head(5).shape == (5, 6)
 
-def test_read_qvd_file_with_pathlib():
+def test_read_qvd_file_with_pathlib(test_data_dir: Path):
     """
     Tests if QVD table can be read from a pathlib Path object properly.
     """
-    path = Path(__file__).parent / ".." / "data" / "small.qvd"
+    path = test_data_dir / "small.qvd"
     df = QvdTable.from_qvd(path)
 
     assert df is not None

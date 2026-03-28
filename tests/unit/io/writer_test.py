@@ -9,7 +9,7 @@ from decimal import Decimal
 from pyqvd import QvdTable, DateValue
 from pyqvd.io import QvdFileWriter, QvdFileWriterOptions, DateValueFormatter
 
-def test_write_qvd_file(tmp_path):
+def test_write_qvd_file(tmp_path: Path):
     """
     Test if a data frame, constructed from a dictionary, can be
     written to file successfully.
@@ -64,7 +64,7 @@ def test_write_qvd_file(tmp_path):
     assert written_data[4] == [5, "E", dt.datetime(2021, 1, 5, 0, 0, 0),
                                dt.timedelta(days=5, seconds=14400), Decimal("5000.00")]
 
-def test_write_qvd_file_custom_options(tmp_path):
+def test_write_qvd_file_custom_options(tmp_path: Path):
     """
     Test if a data frame, constructed from a dictionary, can be
     written to file successfully with custom options.
@@ -129,7 +129,7 @@ def test_write_qvd_file_custom_options(tmp_path):
     assert isinstance(written_df.data[4][2], DateValue)
     assert written_df.data[4][2].display_value == "05.01.2021"
 
-def test_write_qvd_file_none_options(tmp_path):
+def test_write_qvd_file_none_options(tmp_path: Path):
     """
     Test if a data frame, constructed from a dictionary, can be
     written to file successfully with None options.
@@ -180,7 +180,7 @@ def test_write_qvd_file_none_options(tmp_path):
     assert written_data[3] == [4, "D", dt.datetime(2021, 1, 4).date()]
     assert written_data[4] == [5, "E", dt.datetime(2021, 1, 5).date()]
 
-def test_write_qvd_file_as_binary_file_stream(tmp_path):
+def test_write_qvd_file_as_binary_file_stream(tmp_path: Path):
     """
     Test if a data frame, constructed from a dictionary, can be
     written to a binary stream successfully.
