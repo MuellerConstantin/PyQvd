@@ -25,7 +25,7 @@ installing this library, download and install Python.
 To use PyQvd, first install it using pip:
 
 ```bash
-(.venv) $ pip install PyQvd
+pip install PyQvd
 ```
 
 ## Usage
@@ -49,6 +49,63 @@ the file's content, numerous methods and properties are available to work with t
 If you would like to contribute to PyQvd, please fork the repository and create a pull request. We
 welcome pull requests for bug fixes, new features, and improvements to the library. Please ensure
 that your pull request and its changes follows the [Contributing Guidelines](CONTRIBUTING.md).
+
+### Quickstart
+
+Clone the repository and install the development dependencies:
+
+```bash
+git clone https://github.com/MuellerConstantin/PyQvd.git
+cd PyQvd
+
+pip install nox poetry
+poetry install -E pandas
+```
+
+If you want to work with test QVD files, make sure Git LFS is installed:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+### Development workflow
+
+Run the test suite:
+
+```bash
+nox -s tests
+```
+
+Run linting:
+
+```bash
+nox -s lint
+```
+
+Run benchmarks:
+
+```bash
+nox -s benchmark
+```
+
+Run profiling:
+
+```bash
+nox -s profiling
+```
+
+Build documentation:
+
+```bash
+nox -s docs
+```
+
+Build the package:
+
+```bash
+nox -s build
+```
 
 ## License
 
