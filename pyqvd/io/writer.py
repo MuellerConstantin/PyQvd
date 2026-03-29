@@ -99,30 +99,27 @@ class QvdFileWriter:
         total_offset = 0
 
         for column_index, _ in enumerate(self._table._columns):
-            seen_values = {}
-            unique_values = []
-
-            # Determine the unique values of the column and their corresponding indices in the symbol table
-            for row in self._table._data:
-                value = row[column_index]
-                if value not in seen_values:
-                    seen_values[value] = None
-                    unique_values.append(value)
-
             symbols: Dict[QvdValue, int] = {}
+            symbol_bytes = []
             contains_none = False
 
-            for value in unique_values:
+            for row in self._table._data:
+                value = row[column_index]
+
                 # Skip None values, they are represented by bias shifted negative indices
                 if value is None:
                     contains_none = True
                     continue
 
+                # Determine the unique values of the column and their corresponding indices in the symbol table
+                if symbols.get(value) is not None:
+                    continue
+
                 symbols[value] = len(symbols)
+                symbol_bytes.append(self._get_symbol_byte_representation(value))
 
             # Extend the symbol table with the new symbols
-            current_symbols_buffer = b"".join([self._get_symbol_byte_representation(symbol)
-                                               for symbol in symbols])
+            current_symbols_buffer = b"".join(symbol_bytes)
             symbol_buffers.append(current_symbols_buffer)
             self._symbol_table[column_index] = symbols
             self._symbol_table_nullability[column_index] = contains_none
