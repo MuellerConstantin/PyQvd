@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Utilizes the implicit immutability of the QvdValue classes to make hashing through caching more efficient.
+- Significantly improves reader performance by converting to bitwise operations and adjusting the order.
+The improvement can be up to 50%, depending on the size of the QVD file.
+- Significantly improves writer performance by optimizing the way symbol and index tables are built.
+The improvement can be up to 10x, depending on the size of the QVD file.
+
 ## [2.3.1] - 2026-03-13
 
-## Fixed
+### Fixed
 
 - Support truly non-seekable streams for reading QVD files.
 
