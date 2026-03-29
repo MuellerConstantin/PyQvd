@@ -80,6 +80,12 @@ class QvdTableHeader:
 class QvdValue(metaclass=ABCMeta):
     """
     Base class for all QVD data types. All values in a QVD file must inherit from this class.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     @abstractmethod
@@ -196,6 +202,7 @@ class IntegerValue(QvdValue):
         :param value: The integer value.
         """
         self._value: int = value
+        self._hash = None
 
     @property
     def display_value(self) -> str:
@@ -251,7 +258,10 @@ class IntegerValue(QvdValue):
         return self.calculation_value >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "IntegerValue":
         return IntegerValue(self._value)
@@ -276,6 +286,7 @@ class DoubleValue(QvdValue):
         :param value: The double value.
         """
         self._value: float = value
+        self._hash = None
 
     @property
     def display_value(self) -> str:
@@ -331,7 +342,10 @@ class DoubleValue(QvdValue):
         return self.calculation_value >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "DoubleValue":
         return DoubleValue(self._value)
@@ -356,6 +370,7 @@ class StringValue(QvdValue):
         :param value: The string value.
         """
         self._value: str = value
+        self._hash = None
 
     @property
     def display_value(self) -> str:
@@ -411,7 +426,10 @@ class StringValue(QvdValue):
         return self.calculation_value >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "StringValue":
         return StringValue(self._value)
@@ -443,6 +461,7 @@ class DualIntegerValue(QvdValue):
         """
         self._int_value: int = int_value
         self._string_value: str = string_value
+        self._hash = None
 
     @property
     def display_value(self) -> str:
@@ -498,7 +517,10 @@ class DualIntegerValue(QvdValue):
         return self.calculation_value >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "DualIntegerValue":
         return DualIntegerValue(self._int_value, self._string_value)
@@ -530,6 +552,7 @@ class DualDoubleValue(QvdValue):
         """
         self._double_value: float = double_value
         self._string_value: str = string_value
+        self._hash = None
 
     @property
     def display_value(self) -> str:
@@ -585,7 +608,10 @@ class DualDoubleValue(QvdValue):
         return self.calculation_value >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "DualDoubleValue":
         return DualDoubleValue(self._double_value, self._string_value)
@@ -683,7 +709,10 @@ class TimeValue(DualDoubleValue):
         return self.time >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "TimeValue":
         return TimeValue(self._double_value, self._string_value)
@@ -826,7 +855,10 @@ class DateValue(DualIntegerValue):
         return self.date >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "DateValue":
         return DateValue(self._int_value, self._string_value)
@@ -968,7 +1000,10 @@ class TimestampValue(DualDoubleValue):
         return self.timestamp >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "TimestampValue":
         return TimestampValue(self._double_value, self._string_value)
@@ -1110,7 +1145,10 @@ class IntervalValue(DualDoubleValue):
         return self.interval >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "IntervalValue":
         return IntervalValue(self._double_value, self._string_value)
@@ -1264,7 +1302,10 @@ class MoneyValue(DualDoubleValue):
         return self.money >= __value
 
     def __hash__(self) -> int:
-        return hash(self.calculation_value)
+        if self._hash is None:
+            self._hash = hash(self.calculation_value)
+
+        return self._hash
 
     def __copy__(self) -> "MoneyValue":
         return MoneyValue(self._double_value, self._string_value)
