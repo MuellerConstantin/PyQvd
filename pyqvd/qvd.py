@@ -194,6 +194,12 @@ class QvdValue(metaclass=ABCMeta):
 class IntegerValue(QvdValue):
     """
     Represents an integer value in a QVD file.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     def __init__(self, value: int):
         """
@@ -278,6 +284,12 @@ class IntegerValue(QvdValue):
 class DoubleValue(QvdValue):
     """
     Represents a double value in a QVD file.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     def __init__(self, value: float):
         """
@@ -362,6 +374,12 @@ class DoubleValue(QvdValue):
 class StringValue(QvdValue):
     """
     Represents a string value in a QVD file.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     def __init__(self, value: str):
         """
@@ -451,6 +469,12 @@ class DualIntegerValue(QvdValue):
     This is useful when the display representation of a value is different from the calculation
     representation. For example, you may want to display a date as "MM/DD/YYYY" but store it as
     an integer value representing the number of days since a certain date.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     def __init__(self, int_value: int, string_value: str):
         """
@@ -542,6 +566,12 @@ class DualDoubleValue(QvdValue):
     This is useful when the display representation of a value is different from the calculation
     representation. For example, you may want to display a monetary value as "$1,000.00" but store
     it as a double value representing the number of cents.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     def __init__(self, double_value: float, string_value: str):
         """
@@ -633,6 +663,12 @@ class TimeValue(DualDoubleValue):
     and the string value represents the time in a human-readable format. This data type does not
     exist in QVD files and is provided for convenience. In QVD files, times are stored as dual
     double values with a number format of "TIME" if the column is a uniform time column.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     def time(self) -> dt.time:
@@ -779,6 +815,12 @@ class DateValue(DualIntegerValue):
     readable format. This data type does not exist in QVD files and is provided for convenience.
     In QVD files, dates are stored as dual integer values with a number format of "DATE" if the
     column is a uniform date column.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     def date(self) -> dt.date:
@@ -924,6 +966,12 @@ class TimestampValue(DualDoubleValue):
     day and the string value represents the timestamp in a human-readable format. This data type does
     not exist in QVD files and is provided for convenience. In QVD files, timestamps are stored as
     dual double values with a number format of "DATETIME" if the column is a uniform timestamp column.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     def timestamp(self) -> dt.datetime:
@@ -1069,6 +1117,12 @@ class IntervalValue(DualDoubleValue):
     day and the string value represents the interval in a human-readable format. This data type does
     not exist in QVD files and is provided for convenience. In QVD files, intervals are stored as
     dual double values with a number format of "INTERVAL" if the column is a uniform interval column.
+
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     def interval(self) -> dt.timedelta:
@@ -1226,6 +1280,12 @@ class MoneyValue(DualDoubleValue):
         value that is representing a non-monetary value, all ``decimal.Decimal`` values are considered
         to be monetary values and will therefore be converted to ``MoneyValue`` objects when importing
         data from a dictionary or a pandas DataFrame for example.
+    
+    .. important::
+
+        Instances of this class are immutable. After initialization, attributes
+        should not be modified. This guarantees stable hashing and allows instances
+        to be safely used as dictionary keys or set members.
     """
     @property
     def money(self) -> Decimal:
