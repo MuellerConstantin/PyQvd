@@ -6,6 +6,9 @@ The _PyQvd_ library provides a simple API for reading/writing Qlik View Data (QV
 Using this library, it is possible to parse the binary QVD file format and convert it to a Python object
 structure or vice versa.
 
+> [!IMPORTANT]
+> PyQvd is in maintenance mode (bugfixes only). For new projects, we recommend [qvdrs](https://github.com/bintocher/qvdrs).
+
 ---
 
 - [Install](#install)
@@ -27,6 +30,13 @@ To use PyQvd, first install it using pip:
 ```bash
 pip install PyQvd
 ```
+
+> [!TIP]
+> **⚡ Looking for better performance?**
+> 
+> If you're starting a new project or working with large QVD files, check out [qvdrs](https://github.com/bintocher/qvdrs) — a Rust-powered QVD library with Python bindings that offers
+> significantly faster read/write performance, streaming support, and additional features like Parquet conversion, DuckDB integration, and an EXISTS() filter.
+> PyQvd remains available as a pure-Python, zero-dependency solution and will continue to receive bugfixes. For new projects, we recommend [qvdrs](https://github.com/bintocher/qvdrs).
 
 ## Usage
 
