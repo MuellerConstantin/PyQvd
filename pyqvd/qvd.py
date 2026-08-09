@@ -1555,8 +1555,7 @@ class QvdTable:
         """
         if deep:
             return deepcopy(self)
-        else:
-            return QvdTable(self._data, self._columns)
+        return QvdTable(self._data, self._columns)
 
     # pylint: disable-next=line-too-long
     def set(self, key: Union[str, int, slice, Tuple[int, str]], value: Union[any, List[any], List[List[any]]]) -> None:
@@ -1964,9 +1963,8 @@ class QvdTable:
             if inplace:
                 self._data = new_data
                 return self
-            else:
-                return QvdTable(new_data, deepcopy(self._columns))
-        elif axis == "columns":
+            return QvdTable(new_data, deepcopy(self._columns))
+        if axis == "columns":
             new_data = self._data if inplace else deepcopy(self._data)
             new_columns = self._columns if inplace else deepcopy(self._columns)
 
@@ -1997,10 +1995,8 @@ class QvdTable:
                 self._data = new_data
                 self._columns = new_columns
                 return self
-            else:
-                return QvdTable(new_data, new_columns)
-        else:
-            raise ValueError("Axis must be either 'rows' or 'columns'.")
+            return QvdTable(new_data, new_columns)
+        raise ValueError("Axis must be either 'rows' or 'columns'.")
 
     def filter_by(self, column: str, condition: Callable[[QvdValue], bool],
                   inplace: bool = False) -> "QvdTable":
@@ -2023,8 +2019,7 @@ class QvdTable:
         if inplace:
             self._data = new_data
             return self
-        else:
-            return QvdTable(new_data, deepcopy(self._columns))
+        return QvdTable(new_data, deepcopy(self._columns))
 
     def sort_by(self, column: str, ascending: bool = True,
                 comparator: Optional[Callable[[QvdValue, QvdValue], int]] = None,
@@ -2071,8 +2066,7 @@ class QvdTable:
         if inplace:
             self._data = new_data
             return self
-        else:
-            return QvdTable(new_data, deepcopy(self._columns))
+        return QvdTable(new_data, deepcopy(self._columns))
 
     def concat(self, *args: "QvdTable", inplace: bool = False) -> "QvdTable":
         """
@@ -2127,8 +2121,7 @@ class QvdTable:
             self._data = new_data
             self._columns = new_columns
             return self
-        else:
-            return QvdTable(new_data, new_columns)
+        return QvdTable(new_data, new_columns)
 
     def join(self, other: "QvdTable", on: Union[str, List[str]],
              how: Literal["inner", "left", "right", "outer"] = "outer",
@@ -2206,14 +2199,13 @@ class QvdTable:
 
         if how == "inner":
             return self._inner_join(other, on, lsuffix, rsuffix, inplace)
-        elif how == "left":
+        if how == "left":
             return self._left_join(other, on, lsuffix, rsuffix, inplace)
-        elif how == "right":
+        if how == "right":
             return self._right_join(other, on, lsuffix, rsuffix, inplace)
-        elif how == "outer":
+        if how == "outer":
             return self._outer_join(other, on, lsuffix, rsuffix, inplace)
-        else:
-            raise ValueError("Invalid join type. Must be one of 'inner', 'left', 'right', or 'outer'.")
+        raise ValueError("Invalid join type. Must be one of 'inner', 'left', 'right', or 'outer'.")
 
     def _left_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
                    rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
@@ -2248,14 +2240,14 @@ class QvdTable:
         for key in left_dict.keys():
             if key in right_dict:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [right_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on]))
             else:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
@@ -2264,8 +2256,7 @@ class QvdTable:
             self._data = joined_data
             self._columns = joined_columns
             return self
-        else:
-            return QvdTable(joined_data, joined_columns)
+        return QvdTable(joined_data, joined_columns)
 
     def _right_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
                    rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
@@ -2300,14 +2291,14 @@ class QvdTable:
         for key in right_dict.keys():
             if key in left_dict:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [right_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [left_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on]))
             else:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [right_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on] +
                                 [None] * (len(self.columns) - len(on))))
@@ -2316,8 +2307,7 @@ class QvdTable:
             self._data = joined_data
             self._columns = joined_columns
             return self
-        else:
-            return QvdTable(joined_data, joined_columns)
+        return QvdTable(joined_data, joined_columns)
 
     def _outer_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
                    rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
@@ -2352,14 +2342,14 @@ class QvdTable:
         for key in left_dict.keys():
             if key in right_dict:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [right_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on]))
             else:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [None] * (len(other.columns) - len(on))))
@@ -2367,7 +2357,7 @@ class QvdTable:
         for key in right_dict.keys():
             if key not in left_dict:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [None] * (len(self.columns) - len(on)) +
                                 [right_dict[key][other.columns.index(column)]
                                 for column in other.columns if column not in on]))
@@ -2376,8 +2366,7 @@ class QvdTable:
             self._data = joined_data
             self._columns = joined_columns
             return self
-        else:
-            return QvdTable(joined_data, joined_columns)
+        return QvdTable(joined_data, joined_columns)
 
     def _inner_join(self, other: "QvdTable", on: List[str], lsuffix: Optional[str] = None,
                    rsuffix: Optional[str] = None, inplace: bool = False) -> "QvdTable":
@@ -2412,7 +2401,7 @@ class QvdTable:
         for key in left_dict.keys():
             if key in right_dict:
                 joined_data.append(
-                    deepcopy([value for value in key] +
+                    deepcopy(list(key) +
                                 [left_dict[key][self._columns.index(column)]
                                 for column in self.columns if column not in on] +
                                 [right_dict[key][other.columns.index(column)]
@@ -2422,8 +2411,7 @@ class QvdTable:
             self._data = joined_data
             self._columns = joined_columns
             return self
-        else:
-            return QvdTable(joined_data, joined_columns)
+        return QvdTable(joined_data, joined_columns)
 
     # pylint: disable-next=line-too-long
     def __getitem__(self, key: Union[str, int, slice, Tuple[int, str]]) -> Union[QvdValue, List[QvdValue], List[List[QvdValue]]]:
@@ -2636,8 +2624,7 @@ class QvdTable:
             if is_integer_dtype(value_type):
                 if is_int32(int(value)):
                     return IntegerValue(int(value))
-                else:
-                    return DualDoubleValue(float(value), str(value))
+                return DualDoubleValue(float(value), str(value))
             if is_float_dtype(value_type):
                 return DoubleValue(float(value))
             if isinstance(value, pd.Timestamp):
@@ -2657,8 +2644,7 @@ class QvdTable:
                 val_max = int(column.abs().max())
                 if is_int32(val_max):
                     return column.apply(lambda x: IntegerValue(int(x)) if not pd.isna(x) else None)
-                else:
-                    return column.apply(lambda x: DualDoubleValue(float(x), str(x)) if not pd.isna(x) else None)
+                return column.apply(lambda x: DualDoubleValue(float(x), str(x)) if not pd.isna(x) else None)
             if is_float_dtype(value_type):
                 return column.apply(lambda x: DoubleValue(float(x)) if not pd.isna(x) else None)
             if is_datetime64_any_dtype(value_type):

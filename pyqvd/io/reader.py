@@ -456,5 +456,4 @@ class QvdFileReader:
             columns = [field.field_name for field in self._header.fields]
 
             return QvdTable(data, columns)
-        else:
-            return QvdFileReaderIterator(self, self._chunk_size)
+        return QvdFileReaderIterator(self, self._chunk_size)

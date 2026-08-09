@@ -33,6 +33,11 @@ class QvdFileWriter:
     """
     Class allows to write a :class:`QvdTable` as a QVD file to disk.
     """
+    # The writer intentionally reads the table's internal state instead of the public
+    # properties. The latter return deep copies to guarantee immutability, which would
+    # copy the entire table on every iteration of the symbol and index table loops.
+    # pylint: disable=protected-access
+
     def __init__(self, target: Union[str, Path, BinaryIO], table: QvdTable,
                  options: QvdFileWriterOptions = QvdFileWriterOptions()):
         """
@@ -177,7 +182,7 @@ class QvdFileWriter:
             elif symbol_types.issubset(set([StringValue])):
                 field_header.tags.append("$text")
 
-                if all([symbol.display_value.isascii() for symbol in symbols]):
+                if all(symbol.display_value.isascii() for symbol in symbols):
                     field_header.tags.append("$ascii")
 
             self._header.fields.append(field_header)
