@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/v*'
+  pull_request:
+    branches:
+      - main
+      - 'release/v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  POETRY_VIRTUALENVS_CREATE: 'false'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.9'
+          cache: poetry
+      - name: Install Nox
+        run: poetry install --only dev --no-root
+      - name: Lint
+        run: nox -s lint
+      - name: Build
+        run: nox -s build
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: poetry
+      - name: Install Nox
+        run: poetry install --only dev --no-root
+      - name: Test
+        run: nox -s tests
