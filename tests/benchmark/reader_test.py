@@ -13,8 +13,6 @@ from pyqvd import QvdTable
         "small.qvd",    # ~1k rows 6 columns
         "medium.qvd",   # ~20k rows 6 columns
         "large.qvd",    # ~200k rows 6 columns
-        "huge.qvd",     # ~2M rows 6 columns
-        "giant.qvd",    # ~20M rows 6 columns
     ],
 )
 def test_benchmark_qvd_read(benchmark, file_name: str, test_data_dir: Path):

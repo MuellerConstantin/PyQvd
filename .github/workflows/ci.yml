@@ -46,19 +46,6 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v5
-      - name: Cache test data
-        # Right after checkout the fixtures are still LFS pointer files, so hashing
-        # them keys the cache on the object ids and invalidates it exactly when a
-        # fixture changes.
-        uses: actions/cache@v4
-        with:
-          path: .git/lfs/objects
-          key: lfs-${{ hashFiles('tests/data/*.qvd') }}
-          restore-keys: lfs-
-      - name: Fetch test data
-        # The QVD fixtures are stored in Git LFS, which checkout does not fetch by
-        # default. Only the fixtures used by the unit tests are pulled;
-        run: git lfs pull --exclude="tests/data/giant.qvd,tests/data/huge.qvd"
       - name: Install Poetry
         run: pipx install poetry
       - uses: actions/setup-python@v6

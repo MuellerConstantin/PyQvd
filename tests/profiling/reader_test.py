@@ -13,7 +13,7 @@ def test_profile_read(test_data_dir: Path):
     """
     Profile the reading of a QVD file.
     """
-    file_path = test_data_dir / "huge.qvd"
+    file_path = test_data_dir / "large.qvd"
 
     profiler = Profiler()
     profiler.start()

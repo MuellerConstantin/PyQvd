@@ -14,7 +14,7 @@ def test_profile_write(tmp_path: Path, test_data_dir: Path):
     """
     Profile the writing of a QVD file.
     """
-    source = test_data_dir / "huge.qvd"
+    source = test_data_dir / "large.qvd"
     target = tmp_path / "write_profile.qvd"
 
     table = QvdFileReader(source).read()

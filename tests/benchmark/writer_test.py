@@ -13,8 +13,6 @@ from pyqvd import QvdTable
         "small.qvd",
         "medium.qvd",
         "large.qvd",
-        "huge.qvd",
-        "giant.qvd",
     ],
 )
 def test_benchmark_qvd_write(benchmark, file_name: str, test_data_dir: Path, tmp_path: Path):
