@@ -5,6 +5,7 @@ Tests the functionality related to reading files.
 from typing import TYPE_CHECKING
 import datetime as dt
 from decimal import Decimal
+from io import BytesIO
 import pytest
 from pyqvd import (QvdTable, IntegerValue, DoubleValue, StringValue, TimeValue, DateValue, TimestampValue,
                    IntervalValue, DualIntegerValue, DualDoubleValue, MoneyValue, QvdValue)
@@ -300,7 +301,6 @@ def test_construct_qvd_table_from_pandas_df_int64():
     Tests if a QVD table, constructed from a pandas DataFrame containing 64-bit
     integers, contains DualDoubleValues and can be written to QVD file.
     """
-    from io import BytesIO
     try:
         # pylint: disable=import-outside-toplevel
         import pandas as pd
@@ -359,7 +359,7 @@ def test_construct_qvd_table_from_pandas_df_vectorization():
     tbl = QvdTable.from_pandas(raw_df, vectorized=True)
     tbl2 = QvdTable.from_pandas(raw_df, vectorized=False)
 
-    assert tbl.__repr__() == tbl2.__repr__()
+    assert repr(tbl) == repr(tbl2)
     assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
 
 def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
@@ -392,7 +392,7 @@ def test_construct_qvd_table_from_pandas_df_vectorization_with_nones():
 
     assert tbl[2][0] is None
     assert tbl[1][2] is None
-    assert tbl.__repr__() == tbl2.__repr__()
+    assert repr(tbl) == repr(tbl2)
     assert_frame_equal(tbl.to_pandas(), tbl2.to_pandas())
 
 def test_construct_qvd_table_from_pandas_df_with_datetimes():

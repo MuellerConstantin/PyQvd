@@ -2648,9 +2648,11 @@ class QvdTable:
             if is_float_dtype(value_type):
                 return column.apply(lambda x: DoubleValue(float(x)) if not pd.isna(x) else None)
             if is_datetime64_any_dtype(value_type):
-                return column.apply(lambda x: TimestampValue.from_timestamp(x.to_pydatetime()) if not pd.isna(x) else None)
+                return column.apply(lambda x: TimestampValue.from_timestamp(x.to_pydatetime())
+                                    if not pd.isna(x) else None)
             if is_timedelta64_dtype(value_type):
-                return column.apply(lambda x: IntervalValue.from_interval(x.to_pytimedelta()) if not pd.isna(x) else None)
+                return column.apply(lambda x: IntervalValue.from_interval(x.to_pytimedelta())
+                                    if not pd.isna(x) else None)
 
             return column.apply(lambda x: QvdTable._get_symbol_from_value(x) if not pd.isna(x) else None)
 
