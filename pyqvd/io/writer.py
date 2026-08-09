@@ -147,7 +147,7 @@ class QvdFileWriter:
             field_header.number_format.dec = ""
             field_header.number_format.thou = ""
 
-            symbol_types = set([type(symbol) for symbol in symbols])
+            symbol_types = {type(symbol) for symbol in symbols}
 
             if symbol_types.issubset(set([TimeValue])):
                 field_header.number_format.type = "TIME"
@@ -265,7 +265,7 @@ class QvdFileWriter:
         # Determine the bit width and bit offset of each column and update the header accordingly
         for column_index, _ in enumerate(self._table._columns):
             field_contains_none = self._symbol_table_nullability[column_index]
-            max_value = max([record[column_index] for record in self._index_table])
+            max_value = max(record[column_index] for record in self._index_table)
             max_bit_width = max_value.bit_length() if max_value > 0 else 1
 
             # Bit offset is the sum of the bit widths of all previous columns

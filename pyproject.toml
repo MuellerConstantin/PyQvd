@@ -51,6 +51,24 @@ py-version = "3.9"
 
 [tool.pylint.messages_control]
 max-line-length = 120
+# Size and structure checks whose default thresholds do not match this project. The
+# affected spots are deliberate: the QVD format handling is inherently branch-heavy,
+# and reader, writer and table are closely coupled by design. Everything else is
+# expected to pass without findings.
+disable = [
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-statements",
+    "too-many-return-statements",
+    "too-many-instance-attributes",
+    "too-many-public-methods",
+    "too-many-lines",
+    "too-few-public-methods",
+    "duplicate-code",
+    "cyclic-import",
+]
 
 [tool.pylint.report]
 output-format = "colorized"

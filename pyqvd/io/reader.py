@@ -440,6 +440,10 @@ class QvdFileReader:
         :return: The data table of the QVD file or an iterator for reading the data in chunks.
         """
         if isinstance(self._source, str):
+            # The stream deliberately outlives this method. It is closed below for
+            # non-chunked reads and by the iterator when reading in chunks, hence it
+            # cannot be managed by a with statement.
+            # pylint: disable=consider-using-with
             self._stream = open(self._source, "rb")
         else:
             self._stream = self._source
