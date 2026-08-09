@@ -448,16 +448,22 @@ class QvdFileReader:
         else:
             self._stream = self._source
 
-        self._parse_header()
-        self._parse_symbol_table()
+        try:
+            self._parse_header()
+            self._parse_symbol_table()
 
-        if self._chunk_size is None:
-            self._parse_index_table()
+            if self._chunk_size is None:
+                self._parse_index_table()
 
+                self._stream.close()
+
+                data = [self._decode_record(record) for record in self._index_table]
+                columns = [field.field_name for field in self._header.fields]
+
+                return QvdTable(data, columns)
+            return QvdFileReaderIterator(self, self._chunk_size)
+        except BaseException:
+            # The stream is only released on success, either by closing it above or by
+            # handing it over to the iterator. If parsing fails, it would leak instead.
             self._stream.close()
-
-            data = [self._decode_record(record) for record in self._index_table]
-            columns = [field.field_name for field in self._header.fields]
-
-            return QvdTable(data, columns)
-        return QvdFileReaderIterator(self, self._chunk_size)
+            raise
