@@ -4,9 +4,10 @@ Test the format module.
 
 from datetime import datetime
 from decimal import Decimal
+import pytest
 from pyqvd import DateValue, TimeValue, TimestampValue, IntervalValue, MoneyValue
-from pyqvd.io.format import (DateValueFormatter, TimeValueFormatter, TimestampValueFormatter,
-                             IntervalValueFormatter, MoneyValueFormatter)
+from pyqvd.io.format import (DATETIME_FORMAT_TOKENS, DateValueFormatter, TimeValueFormatter,
+                             TimestampValueFormatter, IntervalValueFormatter, MoneyValueFormatter)
 
 def test_date_value_formatter_with_format0():
     """
@@ -218,3 +219,71 @@ def test_money_value_formatter_with_format3():
     money_value = MoneyValue.from_money(Decimal.from_float(12213.4533))
     assert formatter.format(money_value) == "12213.4533"
     assert formatter.get_qvd_format_string() == "###0.0000;-###0.0000"
+
+@pytest.mark.parametrize(
+    "formatter, value, expected",
+    [
+        (DateValueFormatter("YY-MM-DD"), DateValue.from_date(datetime(2021, 3, 7).date()), "21-03-07"),
+        (DateValueFormatter("DD. MMMM YYYY"), DateValue.from_date(datetime(2021, 3, 7).date()), "07. March 2021"),
+        (DateValueFormatter("MMM DD, YYYY"), DateValue.from_date(datetime(2021, 3, 7).date()), "Mar 07, 2021"),
+        (DateValueFormatter("YYYY/YYYY"), DateValue.from_date(datetime(2021, 3, 7).date()), "2021/2021"),
+        (DateValueFormatter("Datum"), DateValue.from_date(datetime(2021, 3, 7).date()), "Datum"),
+        (TimeValueFormatter("HH:mm tt"), TimeValue.from_time(datetime(2021, 3, 7, 14, 5, 9).time()), "02:05 PM"),
+        (TimeValueFormatter("hh-mm-ss"), TimeValue.from_time(datetime(2021, 3, 7, 14, 5, 9).time()), "14-05-09"),
+        (TimestampValueFormatter("DD.MM.YY HH:mm:ss tt"),
+         TimestampValue.from_timestamp(datetime(2021, 3, 7, 14, 5, 9)), "07.03.21 02:05:09 PM"),
+        (TimestampValueFormatter("MMMM YYYY"),
+         TimestampValue.from_timestamp(datetime(2021, 3, 7, 14, 5, 9)), "March 2021"),
+    ],
+)
+def test_datetime_value_formatters_with_distinct_fields(formatter, value, expected: str):
+    """
+    Test the date, time and timestamp formatters with values whose fields all differ, so that
+    mixed up tokens are detected.
+    """
+    assert formatter.format(value) == expected
+
+def _format_with_every_token(qvd_format: str, value: datetime) -> str:
+    """
+    Reference implementation replacing every supported token in its defined order.
+    """
+    result = qvd_format
+
+    for qvd_token, transformer in DATETIME_FORMAT_TOKENS.items():
+        result = result.replace(qvd_token, transformer(value))
+
+    return result
+
+REFERENCE_FORMATS = [
+    "YYYY-MM-DD hh:mm:ss",
+    "YYYY YY MMMM MMM MM DD hh HH mm ss ffffff fffff ffff fff ff f tt",
+    "YYYYY MMMMM fffffff ttt",
+    "DD/MM/YYYY HH:mm tt",
+    "plain text",
+    "",
+]
+
+REFERENCE_DATETIMES = [
+    datetime(2021, 3, 7, 14, 5, 9),
+    datetime(1999, 12, 31, 0, 0, 0),
+    datetime(2024, 2, 29, 23, 59, 59),
+    datetime(2000, 7, 1, 9, 30, 0),
+]
+
+@pytest.mark.parametrize("qvd_format", REFERENCE_FORMATS)
+@pytest.mark.parametrize("moment", REFERENCE_DATETIMES)
+def test_datetime_value_formatters_match_reference(qvd_format: str, moment: datetime):
+    """
+    Test if the date, time and timestamp formatters yield exactly the result of replacing every
+    token in order, including overlapping and repeated tokens.
+    """
+    date_value = DateValue.from_date(moment.date())
+    time_value = TimeValue.from_time(moment.time())
+    timestamp_value = TimestampValue.from_timestamp(moment)
+
+    assert DateValueFormatter(qvd_format).format(date_value) == \
+        _format_with_every_token(qvd_format, date_value.date)
+    assert TimeValueFormatter(qvd_format).format(time_value) == \
+        _format_with_every_token(qvd_format, time_value.time)
+    assert TimestampValueFormatter(qvd_format).format(timestamp_value) == \
+        _format_with_every_token(qvd_format, timestamp_value.timestamp)
