@@ -154,6 +154,49 @@ def test_construct_qvd_interval_value():
     assert interval > IntervalValue.from_interval(dt.timedelta(days=1, hours=2, minutes=29))
     assert interval < dt.timedelta(days=1, hours=2, minutes=31)
 
+def test_construct_qvd_time_value_with_fractional_seconds():
+    """
+    Tests if fractional seconds of a time survive the conversion to and from the serial number.
+    """
+    raw_time = dt.time(14, 5, 9, 123456)
+    time = TimeValue.from_time(raw_time)
+
+    assert time.calculation_value == 50709.123456 / 86400
+    assert time.time == raw_time
+
+def test_construct_qvd_timestamp_value_with_fractional_seconds():
+    """
+    Tests if fractional seconds of a timestamp survive the conversion to and from the serial number.
+    """
+    raw_timestamp = dt.datetime(2021, 3, 7, 14, 5, 9, 123456)
+    timestamp = TimestampValue.from_timestamp(raw_timestamp)
+
+    assert timestamp.timestamp == raw_timestamp
+    assert TimestampValue.from_serial_number(timestamp.calculation_value).timestamp == raw_timestamp
+
+def test_construct_qvd_interval_value_with_fractional_seconds():
+    """
+    Tests if fractional seconds of an interval survive the conversion to and from the serial
+    number and whole seconds are not truncated by floating point inaccuracies.
+    """
+    raw_interval = dt.timedelta(minutes=1, seconds=2, milliseconds=5)
+    interval = IntervalValue.from_interval(raw_interval)
+
+    assert interval.calculation_value == 62.005 / 86400
+    assert interval.interval == raw_interval
+    assert IntervalValue.from_serial_number(2.25 / 86400).interval == dt.timedelta(seconds=2.25)
+    assert IntervalValue.from_serial_number(62 / 86400).interval == dt.timedelta(seconds=62)
+
+def test_construct_qvd_negative_interval_value():
+    """
+    Tests if a negative interval survives the conversion to and from the serial number.
+    """
+    raw_interval = dt.timedelta(hours=-21, milliseconds=-250)
+    interval = IntervalValue.from_interval(raw_interval)
+
+    assert interval.calculation_value < 0
+    assert interval.interval == raw_interval
+
 def test_construct_qvd_money_value():
     """
     Tests if a QVD money value can be constructed properly.

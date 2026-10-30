@@ -765,8 +765,8 @@ class TimeValue(DualDoubleValue):
     @staticmethod
     def _time_to_serial_number(time: dt.time) -> float:
         # pylint: disable-next=invalid-name
-        seconds = (time.hour * 60 * 60) + (time.minute * 60) + time.second
-        serial_number = seconds / (24 * 60 * 60)
+        microseconds = ((time.hour * 60 + time.minute) * 60 + time.second) * 1_000_000 + time.microsecond
+        serial_number = microseconds / 86_400_000_000
 
         return serial_number
 
@@ -1070,7 +1070,7 @@ class TimestampValue(DualDoubleValue):
         # pylint: disable-next=invalid-name
         BASE_TIMESTAMP = dt.datetime(1899, 12, 30)
         delta = timestamp - BASE_TIMESTAMP
-        excel_serial_date = delta.days + delta.seconds / (24 * 60 * 60)
+        excel_serial_date = delta / dt.timedelta(days=1)
 
         return excel_serial_date
 
@@ -1218,14 +1218,13 @@ class IntervalValue(DualDoubleValue):
 
     @staticmethod
     def _interval_to_serial_number(interval: dt.timedelta) -> float:
-        return interval.days + interval.seconds / (24 * 60 * 60)
+        return interval / dt.timedelta(days=1)
 
     @staticmethod
     def _serial_number_to_interval(serial_number: float) -> dt.timedelta:
-        days = int(serial_number)
-        seconds = int((serial_number - days) * 24 * 60 * 60)
-
-        return dt.timedelta(days=days, seconds=seconds)
+        # timedelta rounds to the nearest microsecond, truncating would turn floating point
+        # inaccuracies such as 61.99999 seconds into a whole second less
+        return dt.timedelta(days=serial_number)
 
     @staticmethod
     def from_interval(interval: dt.timedelta) -> "IntervalValue":
