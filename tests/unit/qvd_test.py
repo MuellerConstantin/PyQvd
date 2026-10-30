@@ -2,7 +2,7 @@
 Tests the functionality related to reading files.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 import datetime as dt
 from decimal import Decimal
 from io import BytesIO
@@ -2710,3 +2710,62 @@ def test_qvd_table_ne():
     tbl2 = QvdTable.from_dict(raw_tbl2)
 
     assert tbl1 != tbl2
+
+def _to_pandas_reference(table: QvdTable) -> "pd.DataFrame":
+    """
+    Reference conversion converting every cell on its own and building the data frame row by row.
+    """
+    # pylint: disable=import-outside-toplevel,protected-access
+    import pandas as pd
+
+    data = [[QvdTable._get_value_from_symbol(value) for value in row] for row in table._data]
+    return pd.DataFrame(data, columns=table._columns)
+
+def _build_to_pandas_table(shared: bool) -> QvdTable:
+    """
+    Builds a table with every value type, null values in every column and a column mixing types.
+    Shared tables reference one instance per distinct value, as tables read from QVD files do,
+    otherwise every cell has its own instance.
+    """
+    def column(build: Callable[[int], QvdValue], no_of_distinct: int, is_null: Callable[[int], bool]):
+        pool = [build(i) for i in range(no_of_distinct)]
+        return [None if is_null(i) else pool[i % no_of_distinct] if shared else build(i % no_of_distinct)
+                for i in range(60)]
+
+    columns = {
+        "Int": column(IntegerValue, 5, lambda i: i % 4 == 0),
+        "Double": column(lambda i: DoubleValue(i / 4), 40, lambda i: i % 4 == 1),
+        "String": column(lambda i: StringValue(f"s{i}"), 3, lambda i: i % 4 == 2),
+        "Date": column(lambda i: DateValue.from_date(dt.date(2021, 1, 1) + dt.timedelta(days=i)), 7,
+                       lambda i: i % 4 == 3),
+        "Time": column(lambda i: TimeValue.from_time(dt.time(i, i, 0, 250000)), 24, lambda i: i % 5 == 0),
+        "Timestamp": column(lambda i: TimestampValue.from_timestamp(dt.datetime(2021, 3, 7, 14, 5, 9, 123000)
+                                                                    + dt.timedelta(hours=i)), 4,
+                            lambda i: i % 5 == 1),
+        "Interval": column(lambda i: IntervalValue.from_interval(dt.timedelta(minutes=i, milliseconds=5)), 3,
+                           lambda i: i % 5 == 2),
+        "Money": column(lambda i: MoneyValue.from_money(Decimal("1234.50") + i), 2, lambda i: i % 5 == 3),
+        "Mixed": column(lambda i: [IntegerValue(1), DoubleValue(2.5), StringValue("txt"),
+                                   DualIntegerValue(3, "drei"), DualDoubleValue(4.5, "4,5")][i], 5,
+                        lambda i: i % 6 == 0),
+    }
+
+    return QvdTable([list(row) for row in zip(*columns.values())], list(columns))
+
+@pytest.mark.parametrize("source", ["shared types", "unshared types", "empty", "small.qvd", "medium.qvd"])
+def test_qvd_table_to_pandas_matches_reference(source: str, test_data_dir):
+    """
+    Tests if the pandas conversion yields exactly the data frame of converting every cell on its
+    own, including the column data types.
+    """
+    # pylint: disable=import-outside-toplevel
+    from pandas.testing import assert_frame_equal
+
+    if source.endswith("types"):
+        tbl = _build_to_pandas_table(shared=source == "shared types")
+    elif source == "empty":
+        tbl = QvdTable([], ["A", "B"])
+    else:
+        tbl = QvdTable.from_qvd(test_data_dir / source)
+
+    assert_frame_equal(tbl.to_pandas(), _to_pandas_reference(tbl))
