@@ -1,0 +1,123 @@
+name: Release
+
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch'
+      && format('Rehearsal (dry run) — {0}', github.ref_name)
+      || format('Release — {0}', github.ref_name) }}
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          VERSION="$(poetry version --short)"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$VERSION" ]; then
+              echo "::error::Tag version ($TAG_VERSION) does not match pyproject.toml ($VERSION)"
+              exit 1
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog section
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          awk -v head="## [$VERSION]" '
+            index($0, head) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  # Re-validated here on purpose: a tag can point at any commit, not just one CI has seen.
+  ci:
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: [prepare, ci]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the GitHub release
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.9'
+          cache: poetry
+      - name: Install Nox
+        run: |
+          poetry env use python
+          poetry install --only dev --no-root
+      - name: Build
+        run: poetry run nox -s build
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Write run summary
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            MODE='Release — creates a GitHub release with the distribution files'
+          else
+            MODE='Rehearsal — dry run, nothing is released'
+          fi
+          {
+            echo "## PyQvd $VERSION"
+            echo ""
+            echo "- **Mode:** $MODE"
+            echo "- **Files:** $(ls dist | tr '\n' ' ')"
+            echo ""
+            echo "### Release notes"
+            echo ""
+            cat release-notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Kept for rehearsals as well, so the exact files can be inspected before a release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PyQvd v${{ needs.prepare.outputs.version }}
+          body_path: release-notes.md
+          files: dist/*

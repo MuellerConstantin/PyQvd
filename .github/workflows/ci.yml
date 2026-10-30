@@ -10,6 +10,8 @@ on:
       - main
       - 'release/v*'
   workflow_dispatch:
+  # Lets the release workflow run the identical lint, build and test matrix
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
