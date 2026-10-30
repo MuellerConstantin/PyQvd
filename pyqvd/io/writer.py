@@ -57,7 +57,6 @@ class QvdFileWriter:
 
         self._header: QvdTableHeader = None
         self._symbol_table: List[Dict[QvdValue, int]] = None
-        self._index_table: List[List[int]] = None
         self._header_buffer: bytes = None
         self._symbol_table_buffer: bytes = None
         self._index_table_buffer: bytes = None
@@ -193,12 +192,6 @@ class QvdFileWriter:
         """
         Builds the index table of the QVD file.
         """
-        no_records = self._header.no_of_records
-        no_fields = self._header.no_of_fields
-
-        self._index_table = [[None] * no_fields for _ in range(no_records)]
-        index_buffers = []
-
         # Each row in the index table is represented by one or more bytes, the number of bytes used to represent a
         # row is the so called record byte size. These bytes are used to store the indices of the symbols in the symbol
         # table for each row. Therefore, the value indices of a row are concatenated in a binary representation in
@@ -241,70 +234,51 @@ class QvdFileWriter:
         # called index table, basically a byte buffer. The information about the bit width and bit offset of each column
         # is stored in the header.
 
-        # Convert the values of each row to their corresponding symbol table indices
-        for record_index, record in enumerate(self._table._data):
-            for column_index, _ in enumerate(self._table._columns):
-                # Convert the raw values to indices referring to the symbol table
-                value = record[column_index]
-                field_contains_none = self._symbol_table_nullability[column_index]
-
-                # None values are represented by bias shifted negative indices
-                if value is None:
-                    symbol_index = 0
-                else:
-                    # In order to represent None values, the indices are shifted by the bias value of the column
-                    if field_contains_none:
-                        symbol_index = self._symbol_table[column_index][value] + 2
-                    else:
-                        symbol_index = self._symbol_table[column_index][value]
-
-                self._index_table[record_index][column_index] = symbol_index
-
+        data = self._table._data
+        packed_records = [0] * self._header.no_of_records
         bit_offset = 0
 
-        # Determine the bit width and bit offset of each column and update the header accordingly
-        for column_index, _ in enumerate(self._table._columns):
+        # The index table is built column by column, so each column is a single comprehension over all
+        # records instead of nested loops with attribute lookups for every cell
+        for column_index, field in enumerate(self._header.fields):
             field_contains_none = self._symbol_table_nullability[column_index]
-            max_value = max(record[column_index] for record in self._index_table)
+
+            # In order to represent None values, the indices are shifted by the bias value of the column,
+            # None values themselves are represented by the index 0
+            if field_contains_none:
+                lookup = {value: symbol_index + 2 for value, symbol_index in self._symbol_table[column_index].items()}
+                lookup[None] = 0
+            else:
+                lookup = self._symbol_table[column_index]
+
+            indices = [lookup[record[column_index]] for record in data]
+            max_value = max(indices)
             max_bit_width = max_value.bit_length() if max_value > 0 else 1
 
             # Bit offset is the sum of the bit widths of all previous columns
-            self._header.fields[column_index].bit_offset = bit_offset
+            field.bit_offset = bit_offset
             # Bit width is the maximum bit width of all indices of the column
-            self._header.fields[column_index].bit_width = max_bit_width
+            field.bit_width = max_bit_width
             # Bias is used to shift the indices to represent None values
-            self._header.fields[column_index].bias = -2 if field_contains_none else 0
+            field.bias = -2 if field_contains_none else 0
 
+            # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
+            # stored in the least significant bits of the record, and the last column's index is stored
+            # in the most significant bits of the record.
+            #
+            # MSB                    LSB
+            # Bit 7                Bit 0
+            # [ padding ][ C ][ B ][ A ]
+            packed_records = [packed | (symbol_index << bit_offset)
+                              for packed, symbol_index in zip(packed_records, indices)]
             bit_offset += max_bit_width
 
-        record_bit_width = sum(field.bit_width for field in self._header.fields)
-        record_byte_size = (record_bit_width + 7) // 8
+        record_byte_size = (bit_offset + 7) // 8
 
-        # Concatenate the bit representation of the indices of each row to a single binary representation
-        for record_index, record in enumerate(self._index_table):
-            value = 0
-            bit_pos = 0
-
-            # column order: field0 -> LSB
-            for column_index, symbol_index in enumerate(record):
-                # Within a record, QVD stores the indices from LSB to MSB. This means the first column's index is
-                # stored in the least significant bits of the record, and the last column's index is stored
-                # in the most significant bits of the record.
-                #
-                # MSB                    LSB
-                # Bit 7                Bit 0
-                # [ padding ][ C ][ B ][ A ]
-                bit_width = self._header.fields[column_index].bit_width
-                value |= (symbol_index & ((1 << bit_width) - 1)) << bit_pos
-                bit_pos += bit_width
-
-            # A final record can consist of multiple bytes, depending on the total bit width of all columns.
-            # The QVD format expects little endian byte order.
-            record_byte_representation = value.to_bytes(record_byte_size, byteorder="little")
-
-            index_buffers.append(record_byte_representation)
-
-        self._index_table_buffer = b"".join(index_buffers)
+        # A final record can consist of multiple bytes, depending on the total bit width of all columns.
+        # The QVD format expects little endian byte order.
+        self._index_table_buffer = b"".join([value.to_bytes(record_byte_size, byteorder="little")
+                                             for value in packed_records])
         self._header.record_byte_size = record_byte_size
         self._header.length = len(self._index_table_buffer)
         self._header.offset = len(self._symbol_table_buffer)
