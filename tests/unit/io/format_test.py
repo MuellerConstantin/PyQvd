@@ -2,7 +2,7 @@
 Test the format module.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 import pytest
 from pyqvd import DateValue, TimeValue, TimestampValue, IntervalValue, MoneyValue
@@ -179,6 +179,27 @@ def test_interval_value_formatter_with_format4():
     interval_value = IntervalValue.from_interval(datetime(2021, 1, 1, 12, 52, 11) - datetime(2021, 1, 1, 0, 0, 0))
     assert formatter.format(interval_value) == "46331.000000"
     assert formatter.get_qvd_format_string() == "ss.ffffff"
+
+@pytest.mark.parametrize(
+    "qvd_format, expected",
+    [
+        ("ss.f", "62.0"),
+        ("ss.ff", "62.00"),
+        ("ss.fff", "62.005"),
+        ("ss.ffff", "62.0050"),
+        ("ss.fffff", "62.00500"),
+        ("ss.ffffff", "62.005000"),
+        ("mm:ss.fff", "01:02.005"),
+    ],
+)
+def test_interval_value_formatter_with_fractional_seconds(qvd_format: str, expected: str):
+    """
+    Test the IntervalValueFormatter class with fractional second tokens, which have to yield the
+    leading digits of the fraction and must not interfere with each other.
+    """
+    formatter = IntervalValueFormatter(qvd_format)
+    interval_value = IntervalValue.from_interval(timedelta(minutes=1, seconds=2, milliseconds=5))
+    assert formatter.format(interval_value) == expected
 
 def test_money_value_formatter_with_format0():
     """

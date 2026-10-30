@@ -44,7 +44,9 @@ def _format_datetime(qvd_format: str, value: Union[date, time, datetime]) -> str
 
     return result
 
-INTERVAL_FORMAT_TOKENS = {
+# A tuple instead of a set, as the replacement order matters: longer fraction tokens have to be
+# replaced before shorter ones, otherwise "f" would replace each character of "fff" on its own
+INTERVAL_FORMAT_TOKENS = (
     "D",
     "hh",
     "mm",
@@ -55,7 +57,7 @@ INTERVAL_FORMAT_TOKENS = {
     "fff",
     "ff",
     "f",
-}
+)
 
 class DateValueFormatter:
     """
@@ -312,9 +314,9 @@ class IntervalValueFormatter:
                 else:
                     result = result.replace(qvd_token, str(seconds).zfill(2))
             elif qvd_token in {"f", "ff", "fff", "ffff", "fffff", "ffffff"}:
-                milliseconds_length = len(qvd_token)
-                milliseconds = value.interval.microseconds // 1000
-                result = result.replace(qvd_token, str(milliseconds).zfill(milliseconds_length))
+                # Each "f" is one digit of the fraction, e.g. "fff" yields milliseconds
+                fraction = f"{value.interval.microseconds:06d}"[:len(qvd_token)]
+                result = result.replace(qvd_token, fraction)
 
         return result
 

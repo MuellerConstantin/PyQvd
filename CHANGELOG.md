@@ -16,6 +16,12 @@ The improvement is about 10% to 30% and up to 4x for QVD files with many or long
 - Improves writer performance by formatting date, time and timestamp values only with the tokens
 contained in the format. Writing date, time and timestamp values is about 6x faster.
 
+### Fixed
+
+- Keeps fractional seconds when creating time, timestamp and interval values from Python objects.
+- Converts serial numbers to intervals without losing fractional seconds or truncating a whole second.
+- Formats fractional seconds of intervals as leading digits of the fraction in a deterministic token order.
+
 ## [2.3.2] - 2026-03-29
 
 ### Changed
