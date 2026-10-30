@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.4.0] - 2026-10-31
 
 ### Changed
 
@@ -30,6 +30,9 @@ classes. All classes remain importable from `pyqvd` and `pyqvd.qvd` as before.
 - Reads exactly the number of records stated in the header. Bytes after the last record are no longer decoded
 as an additional record, missing records raise an error and records of zero bytes are supported.
 - Closes the stream if reading a chunk fails.
+- Raises an error for numbers truncated by the end of the symbol table, which were previously decoded
+from the remaining bytes. Unterminated strings at the end of the symbol table raise a `ValueError`
+instead of an `IndexError`. Valid files are not affected.
 
 ## [2.3.2] - 2026-03-29
 
