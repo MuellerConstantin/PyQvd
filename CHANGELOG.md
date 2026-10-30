@@ -21,6 +21,9 @@ contained in the format. Writing date, time and timestamp values is about 6x fas
 - Keeps fractional seconds when creating time, timestamp and interval values from Python objects.
 - Converts serial numbers to intervals without losing fractional seconds or truncating a whole second.
 - Formats fractional seconds of intervals as leading digits of the fraction in a deterministic token order.
+- Reads exactly the number of records stated in the header. Bytes after the last record are no longer decoded
+as an additional record, missing records raise an error and records of zero bytes are supported.
+- Closes the stream if reading a chunk fails.
 
 ## [2.3.2] - 2026-03-29
 

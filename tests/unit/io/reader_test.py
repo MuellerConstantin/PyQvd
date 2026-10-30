@@ -530,3 +530,78 @@ def test_read_qvd_file_with_unterminated_string_symbol():
 
     with pytest.raises(Exception):
         QvdTable.from_stream(io.BytesIO(data))
+
+def _build_records_qvd(no_of_records: int, records: List[int]) -> bytes:
+    """
+    Builds a QVD file with a single integer field of 300 symbols, whose header claims the given
+    number of records while the index table contains the given raw indices.
+    """
+    symbols = b"".join(_int_symbol(value) for value in range(300))
+    fields = [{"name": "Value", "bit_offset": 0, "bit_width": 9, "bias": 0, "no_of_symbols": 300,
+               "offset": 0, "length": len(symbols)}]
+    index_table = b"".join(record.to_bytes(2, "little") for record in records)
+
+    return _build_qvd(fields, symbols, index_table, 2, no_of_records)
+
+@pytest.mark.parametrize("chunk_size", [None, 2, 3])
+def test_read_qvd_file_ignores_bytes_after_last_record(chunk_size):
+    """
+    Tests if bytes following the last record of the index table are not decoded as an additional
+    record, as the number of records is defined by the header.
+    """
+    data = _build_records_qvd(3, [7, 8, 9]) + b"\x01"
+
+    if chunk_size is None:
+        df = QvdTable.from_stream(io.BytesIO(data))
+    else:
+        df = _read_all_chunks(io.BytesIO(data), chunk_size)
+
+    assert _cells(df) == [[("IntegerValue", value, str(value))] for value in (7, 8, 9)]
+
+@pytest.mark.parametrize("chunk_size", [None, 2, 4])
+def test_read_qvd_file_with_fewer_records_than_header(chunk_size):
+    """
+    Tests if an index table containing fewer records than stated in the header is rejected
+    instead of silently returning a shorter table.
+    """
+    data = _build_records_qvd(4, [7, 8, 9])
+
+    with pytest.raises(ValueError, match="index table"):
+        if chunk_size is None:
+            QvdTable.from_stream(io.BytesIO(data))
+        else:
+            _read_all_chunks(io.BytesIO(data), chunk_size)
+
+@pytest.mark.parametrize("chunk_size", [None, 2])
+def test_read_qvd_file_with_record_byte_size_of_zero(chunk_size):
+    """
+    Tests if a QVD file whose fields all have a single symbol, and therefore records of zero
+    bytes, yields the number of records stated in the header.
+    """
+    symbols = _string_symbol("x") + _int_symbol(5)
+    fields = [
+        {"name": "A", "bit_offset": 0, "bit_width": 0, "bias": 0, "no_of_symbols": 1, "offset": 0, "length": 3},
+        {"name": "B", "bit_offset": 0, "bit_width": 0, "bias": 0, "no_of_symbols": 1, "offset": 3, "length": 5},
+    ]
+    data = _build_qvd(fields, symbols, b"", 0, 3)
+
+    if chunk_size is None:
+        df = QvdTable.from_stream(io.BytesIO(data))
+    else:
+        df = _read_all_chunks(io.BytesIO(data), chunk_size)
+
+    assert _cells(df) == [[("StringValue", "x", "x"), ("IntegerValue", 5, "5")]] * 3
+
+def test_read_qvd_file_in_chunks_closes_stream_on_error():
+    """
+    Tests if the stream is closed when decoding a chunk fails.
+    """
+    stream = io.BytesIO(_build_records_qvd(4, [7, 8, 9]))
+    itr = QvdTable.from_stream(stream, chunk_size=2)
+
+    next(itr)
+
+    with pytest.raises(ValueError):
+        next(itr)
+
+    assert stream.closed

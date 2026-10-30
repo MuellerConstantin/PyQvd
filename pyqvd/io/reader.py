@@ -40,17 +40,28 @@ class QvdFileReaderIterator(Iterator):
 
     def __next__(self):
         # pylint: disable-next=protected-access
-        if self._current_chunk * self._chunk_size >= self._reader._header.no_of_records:
+        remaining_records = self._reader._header.no_of_records - self._current_chunk * self._chunk_size
+
+        if remaining_records <= 0:
             # pylint: disable-next=protected-access
             self._reader._stream.close()
             raise StopIteration
 
-        # pylint: disable-next=protected-access
-        chunk_buffer = self._reader._read_index_table_next_chunk_data(self._chunk_size)
-        self._current_chunk += 1
+        # The last chunk only reads the remaining records, so trailing bytes are never decoded
+        no_of_records = min(self._chunk_size, remaining_records)
 
-        # pylint: disable-next=protected-access
-        data = self._reader._decode_index_table(chunk_buffer)
+        try:
+            # pylint: disable-next=protected-access
+            chunk_buffer = self._reader._read_index_table_next_chunk_data(no_of_records)
+            # pylint: disable-next=protected-access
+            data = self._reader._decode_index_table(chunk_buffer, no_of_records)
+        except BaseException:
+            # As in QvdFileReader.read, the stream would leak if parsing a chunk fails
+            # pylint: disable-next=protected-access
+            self._reader._stream.close()
+            raise
+
+        self._current_chunk += 1
         # pylint: disable-next=protected-access
         columns = [field.field_name for field in self._reader._header.fields]
 
@@ -302,14 +313,20 @@ class QvdFileReader:
         """
         return self._read_stream(chunk_size * self._header.record_byte_size)
 
-    def _decode_index_table(self, buffer: bytes) -> List[List[QvdValue]]:
+    def _decode_index_table(self, buffer: bytes, no_of_records: int) -> List[List[QvdValue]]:
         """
         Decodes the records of an index table buffer directly into their symbol values.
 
         :param buffer: The index table data.
+        :param no_of_records: The number of records to decode from the start of the buffer.
         :return: The decoded records.
         """
         record_size = self._header.record_byte_size
+
+        # The header defines the number of records, bytes beyond them are not part of any record
+        if len(buffer) < no_of_records * record_size:
+            raise ValueError("The index table contains fewer records than stated in the header.")
+
         fields = self._header.fields
         # Fields with a bit width of zero have a mask of zero and therefore always resolve to the
         # raw index 0, no special handling is required.
@@ -318,9 +335,13 @@ class QvdFileReader:
         from_bytes = int.from_bytes
         buffer = memoryview(buffer)
 
-        # Each record is read as a single integer that holds the bit-packed symbol indices of all fields
-        records = [from_bytes(buffer[pointer:pointer + record_size], byteorder="little")
-                   for pointer in range(0, len(buffer), record_size)]
+        # Each record is read as a single integer that holds the bit-packed symbol indices of all fields.
+        # Records of zero bytes occur if every field has a single symbol, all their indices are 0.
+        if record_size == 0:
+            records = [0] * no_of_records
+        else:
+            records = [from_bytes(buffer[pointer:pointer + record_size], byteorder="little")
+                       for pointer in range(0, no_of_records * record_size, record_size)]
 
         # Extracting a field's index and resolving it to its symbol happens in one expression, so no
         # intermediate index lists are created. The index is the raw bit value shifted by the field's
@@ -356,7 +377,7 @@ class QvdFileReader:
 
                 self._stream.close()
 
-                data = self._decode_index_table(self._index_table_buffer)
+                data = self._decode_index_table(self._index_table_buffer, self._header.no_of_records)
                 columns = [field.field_name for field in self._header.fields]
 
                 return QvdTable(data, columns)
