@@ -2525,7 +2525,23 @@ class QvdTable:
                 "Pandas is not installed. Please install it using `pip install pandas`."
             ) from exc
 
-        data = [[QvdTable._get_value_from_symbol(symbol) for symbol in row] for row in self._data]
+        convert = QvdTable._get_value_from_symbol
+        data = {}
+
+        # Cells with the same value share one QvdValue instance, which the table keeps alive, so
+        # its id identifies it. In columns with many repeated values, each distinct instance is
+        # converted only once, saving the costly conversion of dates and times. Columns with mostly
+        # distinct values are converted directly, as deduplicating them costs more than it saves.
+        for column, values in zip(self._columns, zip(*self._data)):
+            ids = list(map(id, values))
+            distinct = dict(zip(ids, values))
+
+            if len(distinct) * 2 > len(values):
+                data[column] = list(map(convert, values))
+            else:
+                converted = {key: convert(value) for key, value in distinct.items()}
+                data[column] = list(map(converted.__getitem__, ids))
+
         return pd.DataFrame(data, columns=self._columns)
 
     @staticmethod

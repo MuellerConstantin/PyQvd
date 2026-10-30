@@ -17,6 +17,8 @@ The improvement is about 10% to 30% and up to 4x for QVD files with many or long
 contained in the format. Writing date, time and timestamp values is about 6x faster.
 - Improves writer performance by building the index table column by column without an intermediate
 index table. The improvement is about 35% to 40% for medium and large QVD files.
+- Improves the performance of converting tables read from QVD files to pandas by converting each
+distinct value only once. The conversion is about 1.6x to 2.2x faster for medium and large QVD files.
 
 ### Fixed
 
