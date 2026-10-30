@@ -6,15 +6,16 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join("..", "..")))
+# The project is installed in the documentation environment, both on Read the Docs and in the
+# nox session, so it is imported from there instead of being put on the path manually. The module
+# is imported as a whole, as a top-level name like `version` would be read as a Sphinx config value.
+import importlib.metadata
 
 project = "PyQvd"
 copyright = "2024, Constantin Müller"
 author = "Constantin Müller"
-release = "2.3.2"
+# Taken from the installed project, so pyproject.toml remains the single source of the version
+release = importlib.metadata.version("pyqvd")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
