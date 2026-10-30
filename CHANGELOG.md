@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improves reader performance by decoding the index table directly into values in a single pass.
 The improvement is about 30%, depending on the size of the QVD file.
+- Improves reader performance by parsing strings in the symbol table without copying them byte by byte.
+The improvement is about 10% to 30% and up to 4x for QVD files with many or long strings.
 
 ## [2.3.2] - 2026-03-29
 

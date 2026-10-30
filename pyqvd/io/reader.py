@@ -13,6 +13,15 @@ from pyqvd.qvd import (QvdTable, QvdValue, IntegerValue, DoubleValue, StringValu
                        NumberFormat, LineageInfo, TimeValue, DateValue, TimestampValue,
                        IntervalValue, MoneyValue)
 
+_INT32 = struct.Struct("<i")
+_FLOAT64 = struct.Struct("<d")
+
+# Value classes of dual symbols by the field's number format type, all other types fall back to
+# the plain dual value classes
+_DUAL_INTEGER_CLASSES = {"DATE": DateValue, "MONEY": MoneyValue}
+_DUAL_DOUBLE_CLASSES = {"TIMESTAMP": TimestampValue, "TIME": TimeValue, "INTERVAL": IntervalValue,
+                        "MONEY": MoneyValue}
+
 class QvdFileReaderIterator(Iterator):
     """
     Iterator class for reading QVD files into memory. Parses the binary data of a QVD file and
@@ -229,78 +238,50 @@ class QvdFileReader:
         """
         self._read_symbol_table_data()
 
+        # For performance reasons, we gonna bind instance variables and methods to local variables
+        # to avoid attribute lookups in the hot loop
+        buffer = self._symbol_table_buffer
+        unpack_int = _INT32.unpack_from
+        unpack_double = _FLOAT64.unpack_from
+
         self._symbol_table = [None] * self._header.no_of_fields
 
         for field_index, field in enumerate(self._header.fields):
             symbols: List[QvdValue] = []
+            append = symbols.append
             pointer = field.offset
+            end = field.offset + field.length
 
-            while pointer < field.offset + field.length:
-                symbol_type = self._symbol_table_buffer[pointer]
+            # The number format is the same for all symbols of a field
+            dual_integer_class = _DUAL_INTEGER_CLASSES.get(field.number_format.type, DualIntegerValue)
+            dual_double_class = _DUAL_DOUBLE_CLASSES.get(field.number_format.type, DualDoubleValue)
+
+            # Strings are null terminated, searching the terminator with bytes.index avoids
+            # copying them byte by byte
+            while pointer < end:
+                symbol_type = buffer[pointer]
                 pointer += 1
 
                 if symbol_type == 1:
-                    byte_data = self._symbol_table_buffer[pointer:pointer + 4]
-                    value = int.from_bytes(byte_data, byteorder="little", signed=True)
+                    append(IntegerValue(unpack_int(buffer, pointer)[0]))
                     pointer += 4
-                    symbols.append(IntegerValue(value))
                 elif symbol_type == 2:
-                    byte_data = self._symbol_table_buffer[pointer:pointer + 8]
-                    value = struct.unpack("<d", byte_data)[0]
+                    append(DoubleValue(unpack_double(buffer, pointer)[0]))
                     pointer += 8
-                    symbols.append(DoubleValue(value))
                 elif symbol_type == 4:
-                    byte_data = bytearray()
-
-                    while self._symbol_table_buffer[pointer] != 0:
-                        byte_data.append(self._symbol_table_buffer[pointer])
-                        pointer += 1
-
-                    value = byte_data.decode(encoding="utf-8")
-                    pointer += 1
-                    symbols.append(StringValue(value))
+                    string_end = buffer.index(0, pointer)
+                    append(StringValue(buffer[pointer:string_end].decode(encoding="utf-8")))
+                    pointer = string_end + 1
                 elif symbol_type == 5:
-                    int_byte_data = self._symbol_table_buffer[pointer:pointer + 4]
-                    int_value = int.from_bytes(int_byte_data, byteorder="little", signed=True)
-                    pointer += 4
-
-                    string_byte_data = bytearray()
-                    while self._symbol_table_buffer[pointer] != 0:
-                        string_byte_data.append(self._symbol_table_buffer[pointer])
-                        pointer += 1
-
-                    string_value = string_byte_data.decode(encoding="utf-8")
-                    pointer += 1
-
-                    if field.number_format.type == "DATE":
-                        symbols.append(DateValue(int_value, string_value))
-                    elif field.number_format.type == "MONEY":
-                        symbols.append(MoneyValue(int_value, string_value))
-                    else:
-                        symbols.append(DualIntegerValue(int_value, string_value))
+                    int_value = unpack_int(buffer, pointer)[0]
+                    string_end = buffer.index(0, pointer + 4)
+                    append(dual_integer_class(int_value, buffer[pointer + 4:string_end].decode(encoding="utf-8")))
+                    pointer = string_end + 1
                 elif symbol_type == 6:
-                    double_byte_data = self._symbol_table_buffer[pointer:pointer + 8]
-                    double_value = struct.unpack("<d", double_byte_data)[0]
-                    pointer += 8
-
-                    string_byte_data = bytearray()
-                    while self._symbol_table_buffer[pointer] != 0:
-                        string_byte_data.append(self._symbol_table_buffer[pointer])
-                        pointer += 1
-
-                    string_value = string_byte_data.decode(encoding="utf-8")
-                    pointer += 1
-
-                    if field.number_format.type == "TIMESTAMP":
-                        symbols.append(TimestampValue(double_value, string_value))
-                    elif field.number_format.type == "TIME":
-                        symbols.append(TimeValue(double_value, string_value))
-                    elif field.number_format.type == "INTERVAL":
-                        symbols.append(IntervalValue(double_value, string_value))
-                    elif field.number_format.type == "MONEY":
-                        symbols.append(MoneyValue(double_value, string_value))
-                    else:
-                        symbols.append(DualDoubleValue(double_value, string_value))
+                    double_value = unpack_double(buffer, pointer)[0]
+                    string_end = buffer.index(0, pointer + 8)
+                    append(dual_double_class(double_value, buffer[pointer + 8:string_end].decode(encoding="utf-8")))
+                    pointer = string_end + 1
                 else:
                     raise ValueError("The symbol type byte is not recognized. Unknown data type: " + hex(symbol_type))
 
