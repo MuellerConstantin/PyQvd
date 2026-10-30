@@ -4,6 +4,7 @@ Tests the functionality related to reading files.
 
 import hashlib
 import io
+import struct
 from pathlib import Path
 from typing import List, Tuple
 import pytest
@@ -62,7 +63,7 @@ def _build_qvd(fields: List[dict], symbol_table: bytes, index_table: bytes, reco
         f"<BitOffset>{field['bit_offset']}</BitOffset>"
         f"<BitWidth>{field['bit_width']}</BitWidth>"
         f"<Bias>{field['bias']}</Bias>"
-        "<NumberFormat><Type>UNKNOWN</Type><nDec>0</nDec><UseThou>0</UseThou>"
+        f"<NumberFormat><Type>{field.get('number_format', 'UNKNOWN')}</Type><nDec>0</nDec><UseThou>0</UseThou>"
         "<Fmt></Fmt><Dec></Dec><Thou></Thou></NumberFormat>"
         f"<NoOfSymbols>{field['no_of_symbols']}</NoOfSymbols>"
         f"<Offset>{field['offset']}</Offset>"
@@ -396,3 +397,136 @@ def test_read_written_qvd_file_with_nulls():
     stream.seek(0)
 
     assert _cells(QvdTable.from_stream(stream)) == _cells(df)
+
+def _int_symbol(value: int) -> bytes:
+    """
+    Returns the symbol table bytes of an integer symbol.
+    """
+    return b"\x01" + struct.pack("<i", value)
+
+def _double_symbol(value: float) -> bytes:
+    """
+    Returns the symbol table bytes of a double symbol.
+    """
+    return b"\x02" + struct.pack("<d", value)
+
+def _string_symbol(value: str) -> bytes:
+    """
+    Returns the symbol table bytes of a string symbol.
+    """
+    return b"\x04" + value.encode("utf-8") + b"\0"
+
+def _dual_int_symbol(value: int, text: str) -> bytes:
+    """
+    Returns the symbol table bytes of a dual integer symbol.
+    """
+    return b"\x05" + struct.pack("<i", value) + text.encode("utf-8") + b"\0"
+
+def _dual_double_symbol(value: float, text: str) -> bytes:
+    """
+    Returns the symbol table bytes of a dual double symbol.
+    """
+    return b"\x06" + struct.pack("<d", value) + text.encode("utf-8") + b"\0"
+
+def _build_symbol_table_qvd(columns: List[Tuple[str, str, List[bytes]]]) -> bytes:
+    """
+    Builds a QVD file from (name, number format, symbols) columns. Record i references symbol i
+    of every column, columns with fewer symbols repeat their last symbol.
+    """
+    fields = []
+    symbol_table = b""
+    bit_offset = 0
+
+    for name, number_format, symbols in columns:
+        symbol_bytes = b"".join(symbols)
+        bit_width = max(len(symbols) - 1, 1).bit_length()
+        fields.append({"name": name, "number_format": number_format, "bit_offset": bit_offset,
+                       "bit_width": bit_width, "bias": 0, "no_of_symbols": len(symbols),
+                       "offset": len(symbol_table), "length": len(symbol_bytes)})
+        symbol_table += symbol_bytes
+        bit_offset += bit_width
+
+    record_byte_size = (bit_offset + 7) // 8
+    no_of_records = max(len(symbols) for _, _, symbols in columns)
+    index_table = b"".join(
+        sum(min(i, len(symbols) - 1) << field["bit_offset"]
+            for field, (_, _, symbols) in zip(fields, columns)).to_bytes(record_byte_size, "little")
+        for i in range(no_of_records)
+    )
+
+    return _build_qvd(fields, symbol_table, index_table, record_byte_size, no_of_records)
+
+SYMBOL_TABLE_COLUMNS = [
+    ("Int", "UNKNOWN", [_int_symbol(0), _int_symbol(-1), _int_symbol(2147483647), _int_symbol(-2147483648)]),
+    ("Double", "UNKNOWN", [_double_symbol(0.5), _double_symbol(-1.25), _double_symbol(1e300)]),
+    ("String", "UNKNOWN", [_string_symbol(""), _string_symbol("a"), _string_symbol("Grüße"),
+                           _string_symbol(""), _string_symbol("日本"), _string_symbol("x" * 300)]),
+    ("DualInt", "UNKNOWN", [_dual_int_symbol(1, "one"), _dual_int_symbol(-5, ""), _dual_int_symbol(7, "Säule")]),
+    ("DualIntDate", "DATE", [_dual_int_symbol(44428, "20.08.2021")]),
+    ("DualIntMoney", "MONEY", [_dual_int_symbol(100, "$100.00")]),
+    ("DualDouble", "UNKNOWN", [_dual_double_symbol(3.75, "3,75"), _dual_double_symbol(-0.5, "")]),
+    ("DualDoubleDate", "DATE", [_dual_double_symbol(44428.0, "20.08.2021")]),
+    ("Timestamp", "TIMESTAMP", [_dual_double_symbol(44428.5, "20.08.2021 12:00:00")]),
+    ("Time", "TIME", [_dual_double_symbol(0.25, "06:00:00")]),
+    ("Interval", "INTERVAL", [_dual_double_symbol(1.5, "1 12:00:00")]),
+    ("DualDoubleMoney", "MONEY", [_dual_double_symbol(12.5, "€12,50")]),
+    ("Mixed", "UNKNOWN", [_int_symbol(1), _string_symbol("txt"), _double_symbol(2.5),
+                          _dual_double_symbol(4.5, "4,5"), _dual_int_symbol(3, "drei")]),
+]
+
+SYMBOL_TABLE_EXPECTED_COLUMNS = {
+    "Int": [("IntegerValue", 0, "0"), ("IntegerValue", -1, "-1"),
+            ("IntegerValue", 2147483647, "2147483647"), ("IntegerValue", -2147483648, "-2147483648")],
+    "Double": [("DoubleValue", 0.5, "0.5"), ("DoubleValue", -1.25, "-1.25"), ("DoubleValue", 1e300, "1e+300")],
+    "String": [("StringValue", "", ""), ("StringValue", "a", "a"), ("StringValue", "Grüße", "Grüße"),
+               ("StringValue", "", ""), ("StringValue", "日本", "日本"), ("StringValue", "x" * 300, "x" * 300)],
+    "DualInt": [("DualIntegerValue", 1, "one"), ("DualIntegerValue", -5, ""), ("DualIntegerValue", 7, "Säule")],
+    "DualIntDate": [("DateValue", 44428, "20.08.2021")],
+    "DualIntMoney": [("MoneyValue", 100, "$100.00")],
+    "DualDouble": [("DualDoubleValue", 3.75, "3,75"), ("DualDoubleValue", -0.5, "")],
+    "DualDoubleDate": [("DualDoubleValue", 44428.0, "20.08.2021")],
+    "Timestamp": [("TimestampValue", 44428.5, "20.08.2021 12:00:00")],
+    "Time": [("TimeValue", 0.25, "06:00:00")],
+    "Interval": [("IntervalValue", 1.5, "1 12:00:00")],
+    "DualDoubleMoney": [("MoneyValue", 12.5, "€12,50")],
+    "Mixed": [("IntegerValue", 1, "1"), ("StringValue", "txt", "txt"), ("DoubleValue", 2.5, "2.5"),
+              ("DualDoubleValue", 4.5, "4,5"), ("DualIntegerValue", 3, "drei")],
+}
+
+def test_read_qvd_file_with_all_symbol_types():
+    """
+    Tests if every symbol type is parsed into the value class matching the field's number format,
+    including multi-byte UTF-8, empty and long strings, extreme numbers and a field mixing types.
+    """
+    df = QvdTable.from_stream(io.BytesIO(_build_symbol_table_qvd(SYMBOL_TABLE_COLUMNS)))
+    cells = _cells(df)
+    no_of_records = len(cells)
+
+    assert df.columns == [name for name, _, _ in SYMBOL_TABLE_COLUMNS]
+
+    for column_index, (name, _, _) in enumerate(SYMBOL_TABLE_COLUMNS):
+        expected = SYMBOL_TABLE_EXPECTED_COLUMNS[name]
+        expected = expected + [expected[-1]] * (no_of_records - len(expected))
+
+        assert [row[column_index] for row in cells] == expected, name
+
+    # MoneyValue is a dual double, the integer must not silently turn into a float
+    assert isinstance(cells[0][5][1], int)
+
+def test_read_qvd_file_with_unknown_symbol_type():
+    """
+    Tests if an unknown symbol type byte is rejected.
+    """
+    data = _build_symbol_table_qvd([("Broken", "UNKNOWN", [b"\x03" + struct.pack("<i", 1)])])
+
+    with pytest.raises(ValueError, match="symbol type byte is not recognized"):
+        QvdTable.from_stream(io.BytesIO(data))
+
+def test_read_qvd_file_with_unterminated_string_symbol():
+    """
+    Tests if a string symbol without null terminator at the end of the symbol table is rejected.
+    """
+    data = _build_symbol_table_qvd([("Broken", "UNKNOWN", [b"\x04abc"])])
+
+    with pytest.raises(Exception):
+        QvdTable.from_stream(io.BytesIO(data))
