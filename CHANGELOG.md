@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Improves reader performance by decoding the index table directly into values in a single pass.
+The improvement is about 30%, depending on the size of the QVD file.
+
 ## [2.3.2] - 2026-03-29
 
 ### Changed
