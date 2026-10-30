@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The improvement is about 30%, depending on the size of the QVD file.
 - Improves reader performance by parsing strings in the symbol table without copying them byte by byte.
 The improvement is about 10% to 30% and up to 4x for QVD files with many or long strings.
+- Improves writer performance by formatting date, time and timestamp values only with the tokens
+contained in the format. Writing date, time and timestamp values is about 6x faster.
 
 ## [2.3.2] - 2026-03-29
 

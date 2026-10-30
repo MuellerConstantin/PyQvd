@@ -2,8 +2,8 @@
 Module for handling QVD values and formats.
 """
 
-from datetime import datetime
-from typing import Literal, Mapping, Callable
+from datetime import date, datetime, time
+from typing import Literal, Mapping, Callable, Union
 from pyqvd.qvd import DateValue, TimeValue, TimestampValue, IntervalValue, MoneyValue
 
 DATETIME_FORMAT_TOKENS: Mapping[str, Callable[[datetime], str]] = {
@@ -25,6 +25,24 @@ DATETIME_FORMAT_TOKENS: Mapping[str, Callable[[datetime], str]] = {
     "f": lambda value: value.strftime("%f")[:-5],
     "tt": lambda value: value.strftime("%p"),
 }
+
+def _format_datetime(qvd_format: str, value: Union[date, time, datetime]) -> str:
+    """
+    Replaces the tokens of a QVD format string with the corresponding parts of the given value.
+
+    :param qvd_format: The QVD format string.
+    :param value: The date, time or datetime to format.
+    :return: The formatted value.
+    """
+    result = qvd_format
+
+    # Tokens are replaced in their defined order, longer tokens first. Tokens that are not part of
+    # the format are skipped, as their transformer is the costly part and the replacement a no-op.
+    for qvd_token, transformer in DATETIME_FORMAT_TOKENS.items():
+        if qvd_token in result:
+            result = result.replace(qvd_token, transformer(value))
+
+    return result
 
 INTERVAL_FORMAT_TOKENS = {
     "D",
@@ -84,12 +102,7 @@ class DateValueFormatter:
         """
         Format the date value.
         """
-        result = self._qvd_format
-
-        for qvd_token, transformer in DATETIME_FORMAT_TOKENS.items():
-            result = result.replace(qvd_token, transformer(value.date))
-
-        return result
+        return _format_datetime(self._qvd_format, value.date)
 
     def get_qvd_format_string(self) -> str:
         """
@@ -143,12 +156,7 @@ class TimeValueFormatter:
         """
         Format the time value.
         """
-        result = self._qvd_format
-
-        for qvd_token, transformer in DATETIME_FORMAT_TOKENS.items():
-            result = result.replace(qvd_token, transformer(value.time))
-
-        return result
+        return _format_datetime(self._qvd_format, value.time)
 
     def get_qvd_format_string(self) -> str:
         """
@@ -215,12 +223,7 @@ class TimestampValueFormatter:
         """
         Format the timestamp value.
         """
-        result = self._qvd_format
-
-        for qvd_token, transformer in DATETIME_FORMAT_TOKENS.items():
-            result = result.replace(qvd_token, transformer(value.timestamp))
-
-        return result
+        return _format_datetime(self._qvd_format, value.timestamp)
 
     def get_qvd_format_string(self) -> str:
         """
